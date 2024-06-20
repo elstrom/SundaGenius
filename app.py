@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from threading import Thread
 
 # Token API Hugging Face
-HUGGINGFACE_TOKEN = "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"
+HUGGINGFACE_TOKEN = "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"
 
 # Load model langsung dari Hugging Face dengan menyertakan token
 tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
