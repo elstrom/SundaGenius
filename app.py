@@ -2,14 +2,13 @@ import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from flask import Flask, request, jsonify
 from threading import Thread
-import huggingface_hub
 
-# Login ke Hugging Face
-huggingface_hub.login(token="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")
+# Token API Hugging Face
+HUGGINGFACE_TOKEN = "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"
 
-# Load model langsung dari Hugging Face
-tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin")
-model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin")
+# Load model langsung dari Hugging Face dengan menyertakan token
+tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", use_auth_token=HUGGINGFACE_TOKEN)
+model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin", use_auth_token=HUGGINGFACE_TOKEN)
 
 # Buat aplikasi Flask untuk menangani permintaan dari HTML
 app = Flask(__name__)
