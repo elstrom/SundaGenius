@@ -7,8 +7,8 @@ from threading import Thread
 HUGGINGFACE_TOKEN = "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"
 
 # Load model langsung dari Hugging Face dengan menyertakan token
-tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", use_auth_token=HUGGINGFACE_TOKEN)
-model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin", use_auth_token=HUGGINGFACE_TOKEN)
+tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
+model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
 
 # Buat aplikasi Flask untuk menangani permintaan dari HTML
 app = Flask(__name__)
