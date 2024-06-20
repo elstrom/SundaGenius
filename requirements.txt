@@ -98,3 +98,4 @@ watchdog==4.0.1
 Werkzeug==3.0.3
 wordcloud==1.9.3
 wrapt==1.16.0
+flask_cors==4.0.1
