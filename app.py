@@ -3,6 +3,10 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from flask import Flask, request, jsonify
 from threading import Thread
 
+# Login menggunakan token
+import huggingface_hub
+huggingface_hub.login(token="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")
+
 # Load model directly
 tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin")
 model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin")
