@@ -2,12 +2,12 @@ import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from flask import Flask, request, jsonify
 from threading import Thread
-
-# Login menggunakan token
 import huggingface_hub
+
+# Login ke Hugging Face
 huggingface_hub.login(token="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")
 
-# Load model directly
+# Load model langsung dari Hugging Face
 tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin")
 model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin")
 
@@ -41,7 +41,7 @@ def main():
     # Membaca dan menampilkan HTML
     with open('index.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
-    st.html(html_content)
+    st.markdown(html_content, unsafe_allow_html=True)
 
 if __name__ == '__main__':
     # Mulai thread Flask
