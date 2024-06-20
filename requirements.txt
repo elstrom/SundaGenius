@@ -85,7 +85,6 @@ pygame==2.5.2
 pyparsing==3.1.2
 python-dotenv==1.0.1
 python-multipart==0.0.9
-pywin32==305.1
 qtconsole==5.5.2
 QtPy==2.4.1
 rapidfuzz==3.9.2
