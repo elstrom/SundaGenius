@@ -100,3 +100,5 @@ wordcloud==1.9.3
 wrapt==1.16.0
 flask_cors==4.0.1
 streamlit-extras==0.4.3
+librosa==0.10.2.post1
+soundfile==0.12.1
