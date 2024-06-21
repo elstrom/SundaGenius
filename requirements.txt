@@ -102,3 +102,4 @@ flask_cors==4.0.1
 streamlit-extras==0.4.3
 librosa==0.10.2.post1
 soundfile==0.12.1
+streamlit-option-menu==0.3.13

@@ -8,8 +8,9 @@ def create_audio_db():
     c.execute('''CREATE TABLE IF NOT EXISTS audio (
                  id INTEGER PRIMARY KEY,
                  user_id INTEGER,
-                 audio_file TEXT,
-                 detected_text TEXT
+                 latin TEXT,
+                 aksara TEXT,
+                 mode_option TEXT
                  )''')
 
     conn.commit()

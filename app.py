@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoProcessor, AutoModelForCTC
 import sqlite3
 import pandas as pd
 import torch
@@ -12,13 +12,13 @@ import re
 HUGGINGFACE_TOKEN = "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"
 
 # Fungsi untuk memuat model berdasarkan pilihan bahasa
-def load_model(language_option):
-    if language_option == "Aksara_to_Latin":
-        tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
-        model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
-    else:
+def load_model(mode_option):
+    if mode_option == "Latin_to_Aksara":
         tokenizer = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
         model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
+        model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
     return tokenizer, model
 
 # Fungsi untuk melakukan prediksi
@@ -55,11 +55,17 @@ def main():
     if 'page' not in st.session_state:
         st.session_state.page = "Login"
 
+    if 'nav' not in st.session_state:
+        st.session_state.nav = "Penerjemah"
+
     if 'enter_pressed' not in st.session_state:
         st.session_state.enter_pressed = False
 
     def handle_enter_key():
         st.session_state.enter_pressed = True
+
+    st.write(f"Current page: {st.session_state.page}")
+    st.write(f"Current nav: {st.session_state.nav}")
 
     # ===========================================================
     # ========================= HALAMAN AWAL ====================
@@ -79,6 +85,7 @@ def main():
                 st.session_state.username = df['username'][0]
                 st.success("Login berhasil")
                 st.session_state.page = "Penerjemah"
+                st.session_state.nav == "Penerjemah"
                 st.session_state.enter_pressed = False
                 st.rerun()
             else:
@@ -123,131 +130,40 @@ def main():
         elif st.session_state.page == "Daftar":
             load_register_page()
         return
+    
+    # Sidebar menu
+    st.sidebar.title("Menu")
+    if st.sidebar.button("📚 Penerjemah"):
+        st.session_state.page = "Penerjemah"
+        st.session_state.nav = "Penerjemah"
+    if st.sidebar.button("🎙️ Suara"):
+        st.session_state.page = "Suara"
+        st.session_state.nav = "Suara"
+    if st.sidebar.button("📸 Gambar"):
+        st.session_state.page = "Gambar"
+        st.session_state.nav = "Gambar"
 
     # ===========================================================
     # =============== HALAMAN UTAMA TERJEMAH ====================
     # ===========================================================
 
-    # Sidebar menu
-    st.sidebar.title("Menu")
-    menu = st.sidebar.radio("Pilih Halaman", ["Penerjemah", "Suara", "Gambar"])
-
-    if menu == "Penerjemah":
-        st.session_state.page = "Penerjemah"
-    elif menu == "Suara":
-        st.session_state.page = "Suara"
-    elif menu == "Gambar":
-        st.session_state.page = "Gambar"
-
-    # Menangani tombol 📋 dan 👤
-    if 'nav' not in st.session_state:
-        st.session_state.nav = None
-
-    if st.session_state.page == "Penerjemah" and st.session_state.nav is None:
-        col1, col2, col3 = st.columns([1, 4, 1])
+    if st.session_state.page == "Penerjemah" and st.session_state.nav == "Penerjemah":
+        col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
         with col1:
-            st.button("📋", key="riwayat", on_click=lambda: st.session_state.update({"nav": "Riwayat"}))
+            st.write('')
         with col2:
-            st.markdown("<h1 style='text-align: center;'>Mesin Penerjemahan</h1>", unsafe_allow_html=True)
+            st.page_link("pages/riwayat_penerjemahan.py", label="Riwayat", icon="📋")
         with col3:
-            st.button("👤", key="profil", on_click=lambda: st.session_state.update({"nav": "Profil"}))
+            st.page_link("pages/profil.py", label="Profil", icon="👤")
+        st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Penerjemahan</h1>", unsafe_allow_html=True)
 
-    # Menampilkan halaman berdasarkan pilihan
-    if st.session_state.nav == "Riwayat":
-        st.title("Riwayat Penerjemahan")
-        conn = create_connection("translations.db")
-        user_id = st.session_state.user_id  # Use the user ID from session state
-        df = pd.read_sql_query("SELECT id, input_text, output_text, language_option FROM translations WHERE user_id = ?", conn, params=(user_id,))
-        st.dataframe(df.drop(columns=["id"]))
-
-        if st.button("Hapus Semua Riwayat"):
-            c = conn.cursor()
-            c.execute("DELETE FROM translations WHERE user_id = ?", (user_id,))
-            conn.commit()
-            st.rerun()
-
-        selected_indices = st.multiselect("Pilih riwayat yang ingin dihapus", df.index)
-        if st.button("Hapus Riwayat Terpilih"):
-            if selected_indices:
-                c = conn.cursor()
-                selected_ids = df.loc[selected_indices, 'id'].tolist()
-                c.executemany("DELETE FROM translations WHERE id = ?", [(i,) for i in selected_ids])
-                conn.commit()
-                st.rerun()
-
-        st.button("Kembali", on_click=lambda: st.session_state.update({"nav": None}))
-
-    elif st.session_state.nav == "Profil":
-        st.title("Profil Pengguna")
-        conn = create_connection("users.db")
-        
-        user_id = st.session_state.user_id  # Gunakan ID pengguna dari session state
-
-        # Pastikan user_id adalah integer
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            st.write("User ID tidak valid")
-            return  # Keluar jika user_id tidak valid
-
-        # Query untuk mendapatkan data pengguna berdasarkan user_id
-        query = "SELECT username, email, phone, password FROM users WHERE id = ?"
-        df = pd.read_sql_query(query, conn, params=(user_id,))
-
-        if not df.empty:
-            st.image("https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png", width=150)  # Ganti dengan URL gambar profil online
-            username = st.text_input("Username", df['username'][0], disabled=True, key="profile_username")
-            email = st.text_input("Email", df['email'][0], disabled=True, key="profile_email")
-            phone = st.text_input("Nomor Telepon", df['phone'][0], disabled=True, key="profile_phone")
-            password_hidden = st.checkbox("Tampilkan Password", key="profile_password_checkbox", disabled=True)
-            if password_hidden:
-                password = st.text_input("Password", df['password'][0], disabled=True, key="profile_password")
-            else:
-                password = st.text_input("Password", "******", type="password", disabled=True, key="profile_password_hidden")
-
-            if st.button("Edit Profil"):
-                st.session_state.edit_mode = True
-
-            if 'edit_mode' in st.session_state and st.session_state.edit_mode:
-                username = st.text_input("Username", df['username'][0], key="edit_profile_username")
-                email = st.text_input("Email", df['email'][0], key="edit_profile_email")
-                phone = st.text_input("Nomor Telepon", df['phone'][0], key="edit_profile_phone")
-                password_hidden = st.checkbox("Tampilkan Password", key="edit_profile_password_checkbox")
-                if password_hidden:
-                    password = st.text_input("Password", df['password'][0], key="edit_profile_password")
-                else:
-                    password = st.text_input("Password", "******", type="password", key="edit_profile_password_hidden")
-                
-                if st.button("Konfirmasi"):
-                    if not validate_phone(phone):
-                        st.error("Nomor telepon harus berupa angka.")
-                    elif not validate_password(password):
-                        st.error("Password harus berisi minimal 8 karakter, termasuk satu huruf besar, dan satu nomor atau simbol.")
-                    else:
-                        c = conn.cursor()
-                        c.execute("UPDATE users SET username = ?, email = ?, phone = ?, password = ? WHERE id = ?",
-                                  (username, email, phone, password, user_id))
-                        conn.commit()
-                        st.success("Perubahan disimpan")
-                        st.session_state.edit_mode = False
-
-            if st.button("Keluar"):
-                st.session_state.user_id = None
-                st.session_state.page = "Login"
-                st.rerun()
-        else:
-            st.write("Pengguna tidak ditemukan.")
-
-        st.button("Kembali", on_click=lambda: st.session_state.update({"nav": None}))
-
-    elif st.session_state.page == "Penerjemah" and st.session_state.nav is None:
-        language_option = st.selectbox("Pilih bahasa", ["Aksara_to_Latin", "Latin_to_Aksara"])
+        mode_option = st.selectbox("Pilih bahasa", ["Aksara To Latin", "Latin To Aksara"])
         input_text = st.text_area("Input teks", key="translation_input_text")
 
         if st.button("Submit"):
             if input_text:
                 with st.spinner("Memproses..."):
-                    tokenizer, model = load_model(language_option)
+                    tokenizer, model = load_model(mode_option)
                     translated_text = predict(input_text, tokenizer, model)
                     st.text_area("Output", translated_text, height=200, key="translation_output_text")
 
@@ -255,8 +171,8 @@ def main():
                     conn = create_connection('translations.db')
                     c = conn.cursor()
                     user_id = st.session_state.user_id  # Gunakan ID pengguna dari session state
-                    c.execute("INSERT INTO translations (input_text, output_text, language_option, user_id) VALUES (?, ?, ?, ?)", 
-                              (input_text, translated_text, language_option, user_id))
+                    c.execute("INSERT INTO translations (input_text, output_text, mode_option, user_id) VALUES (?, ?, ?, ?)", 
+                            (input_text, translated_text, mode_option, user_id))
                     conn.commit()
                     conn.close()
             else:
@@ -266,92 +182,97 @@ def main():
     # ================== HALAMAN UTAMA SUARA ====================
     # ===========================================================
 
-    elif st.session_state.page == "Suara":
-        col1, col2, col3 = st.columns([1, 4, 1])
+    elif st.session_state.page == "Suara" and st.session_state.nav == "Suara":
+        col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
         with col1:
-            st.button("📋", key="riwayat_suara", on_click=lambda: st.session_state.update({"nav": "Riwayat_suara"}))
+            st.write('')
         with col2:
-            st.markdown("<h1 style='text-align: center; padding-top: 0;'>Mesin Deteksi Suara</h1>", unsafe_allow_html=True)
+            st.page_link("pages/riwayat_suara.py", label="Riwayat", icon="📋")
         with col3:
-            st.button("👤", key="profil", on_click=lambda: st.session_state.update({"nav": "Profil"}))
+            st.page_link("pages/profil.py", label="Profil", icon="👤")
 
-        # Tombol untuk upload audio dan submit dalam satu baris
-        col1, col2 = st.columns([3, 1])
-        with col1:
+        st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Deteksi Suara</h1>", unsafe_allow_html=True)
+        mode_option = st.selectbox("Pilih bahasa", ["Speech To Text", "Text To Speech"], key="mode_option")
+
+        if mode_option == "Speech To Text":
+            # Tombol untuk upload audio dan submit
             audio_file = st.file_uploader("Pilih audio", type=["mp3", "wav"], label_visibility="collapsed")
-        with col2:
             submit_button = st.button("Submit")
 
-        # Proses audio jika diupload
-        if audio_file:
-            audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format="audio/wav")
+            # Proses audio jika diupload
+            if audio_file:
+                audio_bytes = audio_file.read()
+                st.audio(audio_bytes, format="audio/wav")
 
-            # Memproses audio untuk deteksi suara
-            if submit_button:
-                from transformers import AutoProcessor, AutoModelForCTC
-                processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-                model = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                # Memproses audio untuk deteksi suara
+                if submit_button:
+                    # Model untuk STT
+                    processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                    model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
 
-                # Menggunakan soundfile untuk memuat file audio dari byte stream
-                audio_data, sample_rate = sf.read(io.BytesIO(audio_bytes))
+                    # Menggunakan soundfile untuk memuat file audio dari byte stream
+                    audio_data, sample_rate = sf.read(io.BytesIO(audio_bytes))
 
-                inputs = processor(audio_data, sampling_rate=sample_rate, return_tensors="pt", padding=True)
-                with st.spinner("Memproses..."):
-                    logits = model(**inputs).logits
-                    predicted_ids = torch.argmax(logits, dim=-1)
-                    transcription = processor.batch_decode(predicted_ids)
-                    output_latin = transcription[0]
+                    inputs = processor(audio_data, sampling_rate=sample_rate, return_tensors="pt", padding=True)
+                    with st.spinner("Memproses..."):
+                        logits = model_stt(**inputs).logits
+                        predicted_ids = torch.argmax(logits, dim=-1)
+                        transcription = processor.batch_decode(predicted_ids)
+                        output_latin = transcription[0]
 
-                    # Menampilkan hasil prediksi di output_latin
-                    st.session_state.output_latin = output_latin
+                        # Menampilkan hasil prediksi di output_latin
+                        st.session_state.latin = output_latin
 
-                    # Model untuk menerjemahkan dari Latin ke Aksara
-                    model_terjemahan = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
-                    tokenizer_terjemahan = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
+                        # Memuat model untuk penerjemahan Latin ke Aksara
+                        tokenizer, model_translation = load_model("Latin_to_Aksara")
+                        
+                        inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
+                        outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
+                        output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
 
-                    inputs_terjemahan = tokenizer_terjemahan(output_latin, return_tensors="pt", padding=True)
-                    outputs_terjemahan = model_terjemahan.generate(**inputs_terjemahan)
-                    output_aksara = tokenizer_terjemahan.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
+                        # Menampilkan hasil terjemahan di output_aksara
+                        st.session_state.aksara = output_aksara
 
-                    # Menampilkan hasil terjemahan di output_aksara
-                    st.session_state.output_aksara = output_aksara
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("<h3 style='text-align: center;'>Output Latin</h3>", unsafe_allow_html=True)
+                if "output_latin" not in st.session_state:
+                    st.session_state.latin = ""
+                st.text_area("Output Latin", st.session_state.latin, height=200, key="output_latin", label_visibility="collapsed")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("<h3 style='text-align: center;'>Output Latin</h3>", unsafe_allow_html=True)
-            st.text_area("Output Latin", st.session_state.get("output_latin", ""), height=200, key="output_latin", label_visibility="collapsed")
+            with col2:
+                st.markdown("<h3 style='text-align: center;'>Output Aksara</h3>", unsafe_allow_html=True)
+                if "output_aksara" not in st.session_state:
+                    st.session_state.aksara = ""
+                st.text_area("Output Aksara", st.session_state.aksara, height=200, key="output_aksara", label_visibility="collapsed")
 
-        with col2:
-            st.markdown("<h3 style='text-align: center;'>Output Aksara</h3>", unsafe_allow_html=True)
-            st.text_area("Output Aksara", st.session_state.get("output_aksara", ""), height=200, key="output_aksara", label_visibility="collapsed")
+        elif mode_option == "Text To Speech":
+            st.session_state.page = "TextToSpeech"
+            st.session_state.nav = "TextToSpeech"
 
-        st.button("Kembali", on_click=lambda: st.session_state.update({"nav": None}))
+    elif st.session_state.page == "TextToSpeech" and st.session_state.nav == "TextToSpeech":
+        st.markdown("<h1 style='text-align: center; padding: 40px'>Text To Speech</h1>", unsafe_allow_html=True)
 
-    elif st.session_state.nav == "Riwayat_suara":
-        st.session_state.page = None  # Menghilangkan halaman sebelumnya
-        st.title("Riwayat Deteksi Suara")
-        conn = create_connection("audio.db")
-        user_id = st.session_state.user_id
-        df = pd.read_sql_query("SELECT id, audio_file, detected_text FROM audio WHERE user_id = ?", conn, params=(user_id,))
-        st.dataframe(df.drop(columns=["id"]))
+        teks_input = st.text_area("Masukkan teks di sini", height=200)
 
-        if st.button("Hapus Semua Riwayat"):
-            c = conn.cursor()
-            c.execute("DELETE FROM audio WHERE user_id = ?", (user_id,))
-            conn.commit()
-            st.rerun()
+        submit_button = st.button("Submit")
 
-        selected_indices = st.multiselect("Pilih riwayat yang ingin dihapus", df.index)
-        if st.button("Hapus Riwayat Terpilih"):
-            if selected_indices:
-                c = conn.cursor()
-                selected_ids = df.loc[selected_indices, 'id'].tolist()
-                c.executemany("DELETE FROM audio WHERE id = ?", [(i,) for i in selected_ids])
-                conn.commit()
-                st.rerun()
+        if submit_button and teks_input:
+            # Model untuk TTS
+            tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
+            model = VitsModel.from_pretrained("facebook/mms-tts-sun")
 
-        st.button("Kembali", on_click=lambda: st.session_state.update({"nav": None}))
+            inputs = tokenizer(teks_input, return_tensors="pt")
+
+            with torch.no_grad():
+                output = model(**inputs).waveform
+
+            # Tampilkan audio yang dapat diputar oleh user
+            st.audio(output.numpy(), format="audio/wav")
+
+        if st.button("Kembali"):
+            st.session_state.page = "Suara"
+            st.session_state.nav = "Suara"
         
 if __name__ == "__main__":
     main()
