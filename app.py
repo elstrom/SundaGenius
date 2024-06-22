@@ -1,11 +1,10 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoProcessor, AutoModelForCTC
+from transformers import AutoTokenizer, AutoModelForVision2Seq, AutoModelForSeq2SeqLM, AutoProcessor, AutoModelForCTC, VitsModel
 import sqlite3
 import pandas as pd
 import torch
-import librosa
-import io
 import soundfile as sf
+import io
 import re
 
 # Token API Hugging Face
@@ -182,7 +181,12 @@ def main():
     # ================== HALAMAN UTAMA SUARA ====================
     # ===========================================================
 
-    elif st.session_state.page == "Suara" and st.session_state.nav == "Suara":
+    # Initialize session state for tab selection
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = "Speech To Text"
+
+    # Main page content
+    if st.session_state.page == "Suara" and st.session_state.nav == "Suara":
         col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
         with col1:
             st.write('')
@@ -192,25 +196,30 @@ def main():
             st.page_link("pages/profil.py", label="Profil", icon="👤")
 
         st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Deteksi Suara</h1>", unsafe_allow_html=True)
-        mode_option = st.selectbox("Pilih bahasa", ["Speech To Text", "Text To Speech"], key="mode_option")
 
-        if mode_option == "Speech To Text":
-            # Tombol untuk upload audio dan submit
+        # Use radio buttons for tab selection
+        tab_choice = st.radio("Pilih Tab", ["Speech To Text", "Text To Speech"], index=0 if st.session_state.active_tab == "Speech To Text" else 1, key="tab_radio")
+
+        # Update session state on tab change
+        if tab_choice != st.session_state.active_tab:
+            st.session_state.active_tab = tab_choice
+            st.experimental_rerun()  # Trigger a rerun to update the content immediately
+
+        # Content for the "Speech To Text" tab
+        if st.session_state.active_tab == "Speech To Text":
+            # Upload audio file and submit button
             audio_file = st.file_uploader("Pilih audio", type=["mp3", "wav"], label_visibility="collapsed")
-            submit_button = st.button("Submit")
+            submit_button = st.button("Submit", key="submit_stt")
 
-            # Proses audio jika diupload
+            # Process the uploaded audio file
             if audio_file:
                 audio_bytes = audio_file.read()
                 st.audio(audio_bytes, format="audio/wav")
 
-                # Memproses audio untuk deteksi suara
+                # Speech-to-text processing
                 if submit_button:
-                    # Model untuk STT
                     processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
                     model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-
-                    # Menggunakan soundfile untuk memuat file audio dari byte stream
                     audio_data, sample_rate = sf.read(io.BytesIO(audio_bytes))
 
                     inputs = processor(audio_data, sampling_rate=sample_rate, return_tensors="pt", padding=True)
@@ -220,59 +229,150 @@ def main():
                         transcription = processor.batch_decode(predicted_ids)
                         output_latin = transcription[0]
 
-                        # Menampilkan hasil prediksi di output_latin
                         st.session_state.latin = output_latin
 
-                        # Memuat model untuk penerjemahan Latin ke Aksara
                         tokenizer, model_translation = load_model("Latin_to_Aksara")
-                        
                         inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
                         outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
                         output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
 
-                        # Menampilkan hasil terjemahan di output_aksara
                         st.session_state.aksara = output_aksara
+
+                        conn = create_connection('audio.db')
+                        c = conn.cursor()
+                        user_id = st.session_state.user_id
+                        c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
+                                (user_id, output_latin, output_aksara, "Speech To Text"))
+                        conn.commit()
+                        conn.close()
 
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("<h3 style='text-align: center;'>Output Latin</h3>", unsafe_allow_html=True)
-                if "output_latin" not in st.session_state:
+                if "latin" not in st.session_state:
                     st.session_state.latin = ""
                 st.text_area("Output Latin", st.session_state.latin, height=200, key="output_latin", label_visibility="collapsed")
 
             with col2:
                 st.markdown("<h3 style='text-align: center;'>Output Aksara</h3>", unsafe_allow_html=True)
-                if "output_aksara" not in st.session_state:
+                if "aksara" not in st.session_state:
                     st.session_state.aksara = ""
                 st.text_area("Output Aksara", st.session_state.aksara, height=200, key="output_aksara", label_visibility="collapsed")
 
-        elif mode_option == "Text To Speech":
-            st.session_state.page = "TextToSpeech"
-            st.session_state.nav = "TextToSpeech"
+        # Content for the "Text To Speech" tab
+        elif st.session_state.active_tab == "Text To Speech":
+            st.markdown("<h1 style='text-align: center; padding: 40px'>Text To Speech</h1>", unsafe_allow_html=True)
 
-    elif st.session_state.page == "TextToSpeech" and st.session_state.nav == "TextToSpeech":
-        st.markdown("<h1 style='text-align: center; padding: 40px'>Text To Speech</h1>", unsafe_allow_html=True)
+            if "teks_input" not in st.session_state:
+                st.session_state.teks_input = ""
 
-        teks_input = st.text_area("Masukkan teks di sini", height=200)
+            teks_input = st.text_area("Masukkan teks di sini", st.session_state.teks_input, height=200)
 
-        submit_button = st.button("Submit")
+            submit_button_tts = st.button("Submit", key="submit_tts")
 
-        if submit_button and teks_input:
-            # Model untuk TTS
-            tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
-            model = VitsModel.from_pretrained("facebook/mms-tts-sun")
+            if submit_button_tts and teks_input:
+                tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
+                model = VitsModel.from_pretrained("facebook/mms-tts-sun")
 
-            inputs = tokenizer(teks_input, return_tensors="pt")
+                inputs = tokenizer(teks_input, return_tensors="pt")
 
-            with torch.no_grad():
-                output = model(**inputs).waveform
+                with torch.no_grad():
+                    output_waveform = model(**inputs).waveform
+                    output_waveform_np = output_waveform.numpy()
 
-            # Tampilkan audio yang dapat diputar oleh user
-            st.audio(output.numpy(), format="audio/wav")
+                st.audio(output_waveform_np, format="audio/wav", sample_rate=16000)
 
-        if st.button("Kembali"):
-            st.session_state.page = "Suara"
-            st.session_state.nav = "Suara"
+                # Update the text area with the input text after processing
+                st.session_state.teks_input = teks_input
+
+                conn = create_connection('audio.db')
+                c = conn.cursor()
+                user_id = st.session_state.user_id
+                c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
+                        (user_id, teks_input, "-", "Text To Speech"))
+                conn.commit()
+                conn.close()
+
+    # ===========================================================
+    # ================= HALAMAN UTAMA GAMBAR ====================
+    # ===========================================================
+
+    if st.session_state.page == "Gambar" and st.session_state.nav == "Gambar":
+        col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
+        with col1:
+            st.write('')
+        with col2:
+            st.page_link("pages/riwayat_gambar.py", label="Riwayat", icon="📋")
+        with col3:
+            st.page_link("pages/profil.py", label="Profil", icon="👤")
+
+        st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Deteksi Gambar</h1>", unsafe_allow_html=True)
         
+        # Kontainer untuk menampilkan gambar yang di-upload
+        image_container = st.container()
+
+        col1, col2, col3 = st.columns([0.3, 0.1, 0.1])
+        with col1:
+            pict_file = st.file_uploader("Pilih gambar", type=["png", "jpg"], label_visibility="collapsed")
+        with col2:
+            button_pict = st.button("Submit", key="pict")
+        with col3:
+            st.write("")
+
+        # Tampilkan gambar yang di-upload
+        if pict_file:
+            with image_container:
+                st.image(pict_file, caption="Gambar yang di-upload", use_column_width=True)
+
+        if pict_file and button_pict:
+            from PIL import Image
+
+            # Baca gambar yang di-upload
+            gambar = Image.open(pict_file)
+
+            # Pastikan gambar dalam mode RGB
+            if gambar.mode != "RGB":
+                gambar = gambar.convert("RGB")
+
+            processor = AutoProcessor.from_pretrained("ElStrom/Teks", token=HUGGINGFACE_TOKEN)
+            model_gambar = AutoModelForVision2Seq .from_pretrained("ElStrom/Teks", token=HUGGINGFACE_TOKEN)
+
+            # Memproses gambar dan melakukan prediksi
+            pixel_values = processor(gambar, return_tensors="pt").pixel_values
+            generated_ids = model_gambar.generate(pixel_values)
+            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+            st.session_state.latin_gambar = generated_text
+
+            # Prediksi dari Latin ke Aksara
+            tokenizer_translation, model_translation = load_model("Latin_to_Aksara")
+            inputs_translation = tokenizer_translation(generated_text, return_tensors="pt")
+            outputs_translation = model_translation.generate(**inputs_translation, max_new_tokens=50)
+            translated_text = tokenizer_translation.batch_decode(outputs_translation, skip_special_tokens=True)[0]
+
+            st.session_state.aksara_gambar = translated_text
+
+            # Menyimpan hasil ke database
+            conn = create_connection('image.db')
+            c = conn.cursor()
+            user_id = st.session_state.user_id
+            c.execute("INSERT INTO images (user_id, latin, aksara) VALUES (?, ?, ?)",
+                    (user_id, generated_text, translated_text))
+            conn.commit()
+            conn.close()
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("<h3 style='text-align: center;'>Output Latin</h3>", unsafe_allow_html=True)
+            if "latin_gambar" not in st.session_state:
+                st.session_state.latin_gambar = ""
+            st.text_area("Output Latin", st.session_state.latin_gambar, height=200, key="output_latin_gambar", label_visibility="collapsed")
+
+        with col2:
+            st.markdown("<h3 style='text-align: center;'>Output Aksara</h3>", unsafe_allow_html=True)
+            if "aksara_gambar" not in st.session_state:
+                st.session_state.aksara_gambar = ""
+            st.text_area("Output Aksara", st.session_state.aksara_gambar, height=200, key="output_aksara_gambar", label_visibility="collapsed")
+
 if __name__ == "__main__":
     main()
