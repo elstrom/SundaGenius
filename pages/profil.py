@@ -13,22 +13,27 @@ def validate_password(password):
     return len(password) >= 8 and any(char.isupper() for char in password) and any(char.isdigit() or not char.isalnum() for char in password)
 
 def main():
+    st.title("Profil Pengguna")
+    conn = create_connection("users.db")
+    
+    user_id = st.session_state.get('user_id', None)  # Gunakan ID pengguna dari session state
+
+    # Pastikan user_id adalah string
+    user_id = str(user_id) if user_id else None
+    
+    # Pastikan user_id adalah integer
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        st.write("User ID tidak valid")
+        if st.button("🔑 :blue[Login]"):
+            st.switch_page("app.py")
+        return  # Keluar jika user_id tidak valid
+
     st.write(f"Current page: {st.session_state.page}")
     if st.button("🔙 :violet[Kembali]"):
         st.switch_page("app.py")
     
-    st.title("Profil Pengguna")
-    conn = create_connection("users.db")
-    
-    user_id = st.session_state.user_id  # Gunakan ID pengguna dari session state
-
-    # Pastikan user_id adalah integer
-    try:
-        user_id = int(user_id)
-    except ValueError:
-        st.write("User ID tidak valid")
-        return  # Keluar jika user_id tidak valid
-
     # Query untuk mendapatkan data pengguna berdasarkan user_id
     query = "SELECT username, email, phone, password FROM users WHERE id = ?"
     df = pd.read_sql_query(query, conn, params=(user_id,))
@@ -73,7 +78,7 @@ def main():
         if st.button("Keluar"):
             st.session_state.user_id = None
             st.session_state.page = "Login"
-            st.rerun()
+            st.experimental_rerun()
     else:
         st.write("Pengguna tidak ditemukan.")
 

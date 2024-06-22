@@ -203,7 +203,7 @@ def main():
         # Update session state on tab change
         if tab_choice != st.session_state.active_tab:
             st.session_state.active_tab = tab_choice
-            st.experimental_rerun()  # Trigger a rerun to update the content immediately
+            st.rerun()  # Trigger a rerun to update the content immediately
 
         # Content for the "Speech To Text" tab
         if st.session_state.active_tab == "Speech To Text":
