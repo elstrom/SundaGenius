@@ -178,124 +178,124 @@ def main():
             else:
                 st.warning("Mohon masukkan teks untuk diterjemahkan")
 
-# ===========================================================
-# ================== HALAMAN UTAMA SUARA ====================
-# ===========================================================
+    # ===========================================================
+    # ================== HALAMAN UTAMA SUARA ====================
+    # ===========================================================
 
-# Initialize session state for tab selection
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = "Speech To Text"
+    # Initialize session state for tab selection
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = "Speech To Text"
 
-# Main page content
-if st.session_state.page == "Suara" and st.session_state.nav == "Suara":
-    col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
-    with col1:
-        st.write('')
-    with col2:
-        st.page_link("pages/riwayat_suara.py", label="Riwayat", icon="📋")
-    with col3:
-        st.page_link("pages/profil.py", label="Profil", icon="👤")
-
-    st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Deteksi Suara</h1>", unsafe_allow_html=True)
-
-    # Use radio buttons for tab selection
-    tab_choice = st.radio("Pilih Tab", ["Speech To Text", "Text To Speech"], index=0 if st.session_state.active_tab == "Speech To Text" else 1, key="tab_radio")
-
-    # Update session state on tab change
-    if tab_choice != st.session_state.active_tab:
-        st.session_state.active_tab = tab_choice
-        st.rerun()  # Trigger a rerun to update the content immediately
-
-    # Content for the "Speech To Text" tab
-    if st.session_state.active_tab == "Speech To Text":
-        # Upload audio file and submit button
-        audio_file = st.file_uploader("Pilih audio", type=["mp3", "wav"], label_visibility="collapsed")
-        submit_button = st.button("Submit", key="submit_stt")
-
-        # Process the uploaded audio file
-        if audio_file:
-            audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format="audio/wav")
-
-            # Resample the audio to 16000 Hz
-            audio_data, original_sample_rate = sf.read(io.BytesIO(audio_bytes))
-            audio_data_16k = librosa.resample(audio_data, orig_sr=original_sample_rate, target_sr=16000)
-
-            # Speech-to-text processing
-            if submit_button:
-                processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-                model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-                
-                inputs = processor(audio_data_16k, sampling_rate=16000, return_tensors="pt", padding=True)
-                with st.spinner("Memproses..."):
-                    logits = model_stt(**inputs).logits
-                    predicted_ids = torch.argmax(logits, dim=-1)
-                    transcription = processor.batch_decode(predicted_ids)
-                    output_latin = transcription[0]
-
-                    st.session_state.latin = output_latin
-
-                    tokenizer, model_translation = load_model("Latin_to_Aksara")
-                    inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
-                    outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
-                    output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
-
-                    st.session_state.aksara = output_aksara
-
-                    conn = create_connection('audio.db')
-                    c = conn.cursor()
-                    user_id = st.session_state.user_id
-                    c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
-                            (user_id, output_latin, output_aksara, "Speech To Text"))
-                    conn.commit()
-                    conn.close()
-
-        col1, col2 = st.columns(2)
+    # Main page content
+    if st.session_state.page == "Suara" and st.session_state.nav == "Suara":
+        col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
         with col1:
-            st.markdown("<h3 style='text-align: center;'>Output Latin</h3>", unsafe_allow_html=True)
-            if "latin" not in st.session_state:
-                st.session_state.latin = ""
-            st.text_area("Output Latin", st.session_state.latin, height=200, key="output_latin", label_visibility="collapsed")
-
+            st.write('')
         with col2:
-            st.markdown("<h3 style='text-align: center;'>Output Aksara</h3>", unsafe_allow_html=True)
-            if "aksara" not in st.session_state:
-                st.session_state.aksara = ""
-            st.text_area("Output Aksara", st.session_state.aksara, height=200, key="output_aksara", label_visibility="collapsed")
+            st.page_link("pages/riwayat_suara.py", label="Riwayat", icon="📋")
+        with col3:
+            st.page_link("pages/profil.py", label="Profil", icon="👤")
 
-    # Content for the "Text To Speech" tab
-    elif st.session_state.active_tab == "Text To Speech":
-        st.markdown("<h1 style='text-align: center; padding: 40px'>Text To Speech</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Deteksi Suara</h1>", unsafe_allow_html=True)
 
-        if "teks_input" not in st.session_state:
-            st.session_state.teks_input = ""
+        # Use radio buttons for tab selection
+        tab_choice = st.radio("Pilih Tab", ["Speech To Text", "Text To Speech"], index=0 if st.session_state.active_tab == "Speech To Text" else 1, key="tab_radio")
 
-        teks_input = st.text_area("Masukkan teks di sini", st.session_state.teks_input, height=200)
+        # Update session state on tab change
+        if tab_choice != st.session_state.active_tab:
+            st.session_state.active_tab = tab_choice
+            st.rerun()  # Trigger a rerun to update the content immediately
 
-        submit_button_tts = st.button("Submit", key="submit_tts")
+        # Content for the "Speech To Text" tab
+        if st.session_state.active_tab == "Speech To Text":
+            # Upload audio file and submit button
+            audio_file = st.file_uploader("Pilih audio", type=["mp3", "wav"], label_visibility="collapsed")
+            submit_button = st.button("Submit", key="submit_stt")
 
-        if submit_button_tts and teks_input:
-            tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
-            model = VitsModel.from_pretrained("facebook/mms-tts-sun")
+            # Process the uploaded audio file
+            if audio_file:
+                audio_bytes = audio_file.read()
+                st.audio(audio_bytes, format="audio/wav")
 
-            inputs = tokenizer(teks_input, return_tensors="pt")
+                # Resample the audio to 16000 Hz
+                audio_data, original_sample_rate = sf.read(io.BytesIO(audio_bytes))
+                audio_data_16k = librosa.resample(audio_data, orig_sr=original_sample_rate, target_sr=16000)
 
-            with torch.no_grad():
-                output_waveform = model(**inputs).waveform
-                output_waveform_np = output_waveform.numpy()
+                # Speech-to-text processing
+                if submit_button:
+                    processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                    model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                    
+                    inputs = processor(audio_data_16k, sampling_rate=16000, return_tensors="pt", padding=True)
+                    with st.spinner("Memproses..."):
+                        logits = model_stt(**inputs).logits
+                        predicted_ids = torch.argmax(logits, dim=-1)
+                        transcription = processor.batch_decode(predicted_ids)
+                        output_latin = transcription[0]
 
-            st.audio(output_waveform_np, format="audio/wav", sample_rate=16000)
+                        st.session_state.latin = output_latin
 
-            # Update the text area with the input text after processing
-            st.session_state.teks_input = teks_input
+                        tokenizer, model_translation = load_model("Latin_to_Aksara")
+                        inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
+                        outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
+                        output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
 
-            conn = create_connection('audio.db')
-            c = conn.cursor()
-            user_id = st.session_state.user_id
-            c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
-                    (user_id, teks_input, "-", "Text To Speech"))
-            conn.commit()
-            conn.close()
+                        st.session_state.aksara = output_aksara
+
+                        conn = create_connection('audio.db')
+                        c = conn.cursor()
+                        user_id = st.session_state.user_id
+                        c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
+                                (user_id, output_latin, output_aksara, "Speech To Text"))
+                        conn.commit()
+                        conn.close()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("<h3 style='text-align: center;'>Output Latin</h3>", unsafe_allow_html=True)
+                if "latin" not in st.session_state:
+                    st.session_state.latin = ""
+                st.text_area("Output Latin", st.session_state.latin, height=200, key="output_latin", label_visibility="collapsed")
+
+            with col2:
+                st.markdown("<h3 style='text-align: center;'>Output Aksara</h3>", unsafe_allow_html=True)
+                if "aksara" not in st.session_state:
+                    st.session_state.aksara = ""
+                st.text_area("Output Aksara", st.session_state.aksara, height=200, key="output_aksara", label_visibility="collapsed")
+
+        # Content for the "Text To Speech" tab
+        elif st.session_state.active_tab == "Text To Speech":
+            st.markdown("<h1 style='text-align: center; padding: 40px'>Text To Speech</h1>", unsafe_allow_html=True)
+
+            if "teks_input" not in st.session_state:
+                st.session_state.teks_input = ""
+
+            teks_input = st.text_area("Masukkan teks di sini", st.session_state.teks_input, height=200)
+
+            submit_button_tts = st.button("Submit", key="submit_tts")
+
+            if submit_button_tts and teks_input:
+                tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
+                model = VitsModel.from_pretrained("facebook/mms-tts-sun")
+
+                inputs = tokenizer(teks_input, return_tensors="pt")
+
+                with torch.no_grad():
+                    output_waveform = model(**inputs).waveform
+                    output_waveform_np = output_waveform.numpy()
+
+                st.audio(output_waveform_np, format="audio/wav", sample_rate=16000)
+
+                # Update the text area with the input text after processing
+                st.session_state.teks_input = teks_input
+
+                conn = create_connection('audio.db')
+                c = conn.cursor()
+                user_id = st.session_state.user_id
+                c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
+                        (user_id, teks_input, "-", "Text To Speech"))
+                conn.commit()
+                conn.close()
 
     # ===========================================================
     # ================= HALAMAN UTAMA GAMBAR ====================
