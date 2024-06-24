@@ -184,15 +184,34 @@ def main():
     # ================== HALAMAN UTAMA SUARA ====================
     # ===========================================================
 
-    # Initialize session state for tab selection
+    # Inisialisasi session state untuk tab yang aktif
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "Speech To Text"
 
-    # Initialize session state for processing state
+    # Inisialisasi session state untuk state pemrosesan
     if 'processing' not in st.session_state:
         st.session_state.processing = False
 
-    # Main page content
+    # Fungsi untuk memuat model dan tokenizer dengan caching
+    @st.cache_resource
+    def load_stt_model():
+        processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+        model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+        return processor, model_stt
+
+    @st.cache_resource
+    def load_translation_model():
+        tokenizer = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara",)
+        model_translation = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara",)
+        return tokenizer, model_translation
+
+    @st.cache_resource
+    def load_tts_model():
+        tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
+        model_tts = VitsModel.from_pretrained("facebook/mms-tts-sun")
+        return tokenizer, model_tts
+
+    # Konten halaman utama
     if st.session_state.page == "Suara" and st.session_state.nav == "Suara":
         col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
         with col1:
@@ -204,26 +223,26 @@ def main():
 
         st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Deteksi Suara</h1>", unsafe_allow_html=True)
 
-        # Use radio buttons for tab selection
+        # Gunakan radio button untuk pemilihan tab
         tab_choice = st.radio("Pilih Tab", ["Speech To Text", "Text To Speech"], index=0 if st.session_state.active_tab == "Speech To Text" else 1, key="tab_radio")
 
-        # Update session state on tab change
+        # Update session state pada perubahan tab
         if tab_choice != st.session_state.active_tab:
             st.session_state.active_tab = tab_choice
-            st.rerun()  # Trigger a rerun to update the content immediately
+            st.rerun()  # Memicu rerun untuk memperbarui konten segera
 
-        # Content for the "Speech To Text" tab
+        # Konten untuk tab "Speech To Text"
         if st.session_state.active_tab == "Speech To Text":
-            # Upload audio file and submit button
+            # Upload file audio dan tombol submit
             audio_file = st.file_uploader("Pilih audio", type=["mp3", "wav"], label_visibility="collapsed")
-            submit_button = st.button("Submit", key="submit_stt", disabled=st.session_state.processing)
+            submit_button = st.button("Submit", key="submit_stt")
 
-            # Process the uploaded audio file
+            # Proses file audio yang diunggah
             if audio_file:
                 audio_bytes = audio_file.read()
                 
                 try:
-                    # Try to read the audio file to ensure it's valid
+                    # Coba membaca file audio untuk memastikan validitasnya
                     audio_data, original_sample_rate = sf.read(io.BytesIO(audio_bytes))
                     st.audio(audio_bytes, format="audio/wav")
                 except Exception as e:
@@ -231,15 +250,14 @@ def main():
                     audio_data, original_sample_rate = None, None
 
                 if audio_data is not None:
-                    # Resample the audio to 16000 Hz and ensure it's mono
+                    # Resample audio ke 16000 Hz dan pastikan mono
                     audio_data_mono = librosa.to_mono(audio_data.T) if len(audio_data.shape) > 1 else audio_data
                     audio_data_16k = librosa.resample(audio_data_mono, orig_sr=original_sample_rate, target_sr=16000)
 
-                    # Speech-to-text processing
+                    # Pemrosesan Speech-to-Text
                     if submit_button:
                         st.session_state.processing = True  # Set processing state to True
-                        processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-                        model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                        processor, model_stt = load_stt_model()
 
                         inputs = processor(audio_data_16k, sampling_rate=16000, return_tensors="pt", padding=True)
                         with st.spinner("Memproses..."):
@@ -250,7 +268,7 @@ def main():
 
                             st.session_state.latin = output_latin
 
-                            tokenizer, model_translation = load_model("Latin_to_Aksara")
+                            tokenizer, model_translation = load_translation_model()
                             inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
                             outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
                             output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
@@ -264,10 +282,10 @@ def main():
                                     (user_id, output_latin, output_aksara, "Speech To Text"))
                             conn.commit()
                             conn.close()
-                    
+                        
                         st.session_state.processing = False  # Set processing state to False
                         
-                        # Clear the Streamlit cache after processing is complete
+                        # Bersihkan cache Streamlit setelah pemrosesan selesai
                         st.cache_data.clear()
 
             col1, col2 = st.columns(2)
@@ -283,7 +301,7 @@ def main():
                     st.session_state.aksara = ""
                 st.text_area("Output Aksara", st.session_state.aksara, height=200, key="output_aksara", label_visibility="collapsed")
 
-        # Content for the "Text To Speech" tab
+        # Konten untuk tab "Text To Speech"
         elif st.session_state.active_tab == "Text To Speech":
             st.markdown("<h1 style='text-align: center; padding: 40px'>Text To Speech</h1>", unsafe_allow_html=True)
 
@@ -292,22 +310,21 @@ def main():
 
             teks_input = st.text_area("Masukkan teks di sini", st.session_state.teks_input, height=200)
 
-            submit_button_tts = st.button("Submit", key="submit_tts", disabled=st.session_state.processing)
+            submit_button_tts = st.button("Submit", key="submit_tts")
 
             if submit_button_tts and teks_input:
                 st.session_state.processing = True  # Set processing state to True
-                tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
-                model = VitsModel.from_pretrained("facebook/mms-tts-sun")
+                tokenizer, model_tts = load_tts_model()
 
                 inputs = tokenizer(teks_input, return_tensors="pt")
 
                 with torch.no_grad():
-                    output_waveform = model(**inputs).waveform
+                    output_waveform = model_tts(**inputs).waveform
                     output_waveform_np = output_waveform.numpy()
 
                 st.audio(output_waveform_np, format="audio/wav", sample_rate=16000)
 
-                # Update the text area with the input text after processing
+                # Perbarui text area dengan teks input setelah pemrosesan
                 st.session_state.teks_input = teks_input
 
                 conn = create_connection('audio.db')
@@ -320,7 +337,7 @@ def main():
                 
                 st.session_state.processing = False  # Set processing state to False
 
-                # Clear the Streamlit cache after processing is complete
+                # Bersihkan cache Streamlit setelah pemrosesan selesai
                 st.cache_data.clear()
 
     # ===========================================================
