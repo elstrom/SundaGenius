@@ -11,8 +11,8 @@ import re
 HUGGINGFACE_TOKEN = "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"
 
 # Fungsi untuk memuat model berdasarkan pilihan bahasa
-def load_model(mode_option):
-    if mode_option == "Latin_to_Aksara":
+def load_model(language_option):
+    if language_option == "Latin_to_Aksara":
         tokenizer = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
         model = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
     else:
@@ -156,13 +156,13 @@ def main():
             st.page_link("pages/profil.py", label="Profil", icon="👤")
         st.markdown("<h1 style='text-align: center; padding: 40px'>Mesin Penerjemahan</h1>", unsafe_allow_html=True)
 
-        mode_option = st.selectbox("Pilih bahasa", ["Aksara To Latin", "Latin To Aksara"])
+        language_option = st.selectbox("Pilih bahasa", ["Latin_to_Aksara", "Aksara_to_Latin"])
         input_text = st.text_area("Input teks", key="translation_input_text")
 
         if st.button("Submit"):
             if input_text:
                 with st.spinner("Memproses..."):
-                    tokenizer, model = load_model(mode_option)
+                    tokenizer, model = load_model(language_option)
                     translated_text = predict(input_text, tokenizer, model)
                     st.text_area("Output", translated_text, height=200, key="translation_output_text")
 
@@ -170,8 +170,8 @@ def main():
                     conn = create_connection('translations.db')
                     c = conn.cursor()
                     user_id = st.session_state.user_id  # Gunakan ID pengguna dari session state
-                    c.execute("INSERT INTO translations (input_text, output_text, mode_option, user_id) VALUES (?, ?, ?, ?)", 
-                            (input_text, translated_text, mode_option, user_id))
+                    c.execute("INSERT INTO translations (input_text, output_text, language_option, user_id) VALUES (?, ?, ?, ?)", 
+                            (input_text, translated_text, language_option, user_id))
                     conn.commit()
                     conn.close()
             else:
