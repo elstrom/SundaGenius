@@ -201,14 +201,14 @@ def main():
 
     @st.cache_resource
     def load_translation_model():
-        tokenizer = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara",)
-        model_translation = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara",)
+        tokenizer = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
+        model_translation = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
         return tokenizer, model_translation
 
     @st.cache_resource
     def load_tts_model():
-        tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
-        model_tts = VitsModel.from_pretrained("facebook/mms-tts-sun")
+        tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun", token=HUGGINGFACE_TOKEN)
+        model_tts = VitsModel.from_pretrained("facebook/mms-tts-sun", token=HUGGINGFACE_TOKEN)
         return tokenizer, model_tts
 
     # Konten halaman utama
