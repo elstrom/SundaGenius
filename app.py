@@ -188,6 +188,10 @@ def main():
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "Speech To Text"
 
+    # Initialize session state for processing state
+    if 'processing' not in st.session_state:
+        st.session_state.processing = False
+
     # Main page content
     if st.session_state.page == "Suara" and st.session_state.nav == "Suara":
         col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
@@ -212,46 +216,59 @@ def main():
         if st.session_state.active_tab == "Speech To Text":
             # Upload audio file and submit button
             audio_file = st.file_uploader("Pilih audio", type=["mp3", "wav"], label_visibility="collapsed")
-            submit_button = st.button("Submit", key="submit_stt")
+            submit_button = st.button("Submit", key="submit_stt", disabled=st.session_state.processing)
 
             # Process the uploaded audio file
             if audio_file:
                 audio_bytes = audio_file.read()
-                st.audio(audio_bytes, format="audio/wav")
+                
+                try:
+                    # Try to read the audio file to ensure it's valid
+                    audio_data, original_sample_rate = sf.read(io.BytesIO(audio_bytes))
+                    st.audio(audio_bytes, format="audio/wav")
+                except Exception as e:
+                    st.error(f"Error reading audio file: {e}")
+                    audio_data, original_sample_rate = None, None
 
-                # Resample the audio to 16000 Hz and ensure it's mono
-                audio_data, original_sample_rate = sf.read(io.BytesIO(audio_bytes))
-                audio_data_mono = librosa.to_mono(audio_data.T) if len(audio_data.shape) > 1 else audio_data
-                audio_data_16k = librosa.resample(audio_data_mono, orig_sr=original_sample_rate, target_sr=16000)
+                if audio_data is not None:
+                    # Resample the audio to 16000 Hz and ensure it's mono
+                    audio_data_mono = librosa.to_mono(audio_data.T) if len(audio_data.shape) > 1 else audio_data
+                    audio_data_16k = librosa.resample(audio_data_mono, orig_sr=original_sample_rate, target_sr=16000)
 
-                # Speech-to-text processing
-                if submit_button:
-                    processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-                    model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                    # Speech-to-text processing
+                    if submit_button:
+                        st.session_state.processing = True  # Set processing state to True
+                        processor = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+                        model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
+
+                        inputs = processor(audio_data_16k, sampling_rate=16000, return_tensors="pt", padding=True)
+                        with st.spinner("Memproses..."):
+                            logits = model_stt(**inputs).logits
+                            predicted_ids = torch.argmax(logits, dim=-1)
+                            transcription = processor.batch_decode(predicted_ids)
+                            output_latin = transcription[0]
+
+                            st.session_state.latin = output_latin
+
+                            tokenizer, model_translation = load_model("Latin_to_Aksara")
+                            inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
+                            outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
+                            output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
+
+                            st.session_state.aksara = output_aksara
+
+                            conn = create_connection('audio.db')
+                            c = conn.cursor()
+                            user_id = st.session_state.user_id
+                            c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
+                                    (user_id, output_latin, output_aksara, "Speech To Text"))
+                            conn.commit()
+                            conn.close()
                     
-                    inputs = processor(audio_data_16k, sampling_rate=16000, return_tensors="pt", padding=True)
-                    with st.spinner("Memproses..."):
-                        logits = model_stt(**inputs).logits
-                        predicted_ids = torch.argmax(logits, dim=-1)
-                        transcription = processor.batch_decode(predicted_ids)
-                        output_latin = transcription[0]
-
-                        st.session_state.latin = output_latin
-
-                        tokenizer, model_translation = load_model("Latin_to_Aksara")
-                        inputs_terjemahan = tokenizer(output_latin, return_tensors="pt", padding=True)
-                        outputs_terjemahan = model_translation.generate(**inputs_terjemahan, max_new_tokens=50)
-                        output_aksara = tokenizer.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
-
-                        st.session_state.aksara = output_aksara
-
-                        conn = create_connection('audio.db')
-                        c = conn.cursor()
-                        user_id = st.session_state.user_id
-                        c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
-                                (user_id, output_latin, output_aksara, "Speech To Text"))
-                        conn.commit()
-                        conn.close()
+                        st.session_state.processing = False  # Set processing state to False
+                        
+                        # Clear the Streamlit cache after processing is complete
+                        st.cache_data.clear()
 
             col1, col2 = st.columns(2)
             with col1:
@@ -275,9 +292,10 @@ def main():
 
             teks_input = st.text_area("Masukkan teks di sini", st.session_state.teks_input, height=200)
 
-            submit_button_tts = st.button("Submit", key="submit_tts")
+            submit_button_tts = st.button("Submit", key="submit_tts", disabled=st.session_state.processing)
 
             if submit_button_tts and teks_input:
+                st.session_state.processing = True  # Set processing state to True
                 tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-sun")
                 model = VitsModel.from_pretrained("facebook/mms-tts-sun")
 
@@ -299,6 +317,11 @@ def main():
                         (user_id, teks_input, "-", "Text To Speech"))
                 conn.commit()
                 conn.close()
+                
+                st.session_state.processing = False  # Set processing state to False
+
+                # Clear the Streamlit cache after processing is complete
+                st.cache_data.clear()
 
     # ===========================================================
     # ================= HALAMAN UTAMA GAMBAR ====================
