@@ -217,9 +217,10 @@ def main():
                 audio_bytes = audio_file.read()
                 st.audio(audio_bytes, format="audio/wav")
 
-                # Resample the audio to 16000 Hz
+                # Resample the audio to 16000 Hz and ensure it's mono
                 audio_data, original_sample_rate = sf.read(io.BytesIO(audio_bytes))
-                audio_data_16k = librosa.resample(audio_data, orig_sr=original_sample_rate, target_sr=16000)
+                audio_data_mono = librosa.to_mono(audio_data.T) if len(audio_data.shape) > 1 else audio_data
+                audio_data_16k = librosa.resample(audio_data_mono, orig_sr=original_sample_rate, target_sr=16000)
 
                 # Speech-to-text processing
                 if submit_button:
