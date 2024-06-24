@@ -9,7 +9,6 @@ import io
 import re
 
 import numpy as np
-np.import_array()
 
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
