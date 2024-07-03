@@ -64,9 +64,9 @@ def git_commit(file_path):
         # Inisialisasi repository Git jika belum diinisialisasi
         subprocess.run(["git", "init"], check=True)
         
-        # Set remote repository URL
-        remote_url = "git@github.com:elstrom/sundagenius.git"
-        subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
+        # Memeriksa repository remote yang terhubung
+        result_remote = subprocess.run(["git", "remote", "-v"], check=True, capture_output=True, text=True)
+        st.write(result_remote.stdout)
         
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
@@ -74,7 +74,7 @@ def git_commit(file_path):
         result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
         st.write(result_add.stdout)
         
-        result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
+        result_commit = subprocess.run(["git", "commit", "-m", commit_message"], check=True, capture_output=True, text=True)
         st.write(result_commit.stdout)
         
         result_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
@@ -233,23 +233,6 @@ def main():
                     git_commit("translations.db")
             else:
                 st.warning("Mohon masukkan teks untuk diterjemahkan")
-
-    def display_git_remote():
-        try:
-            # Jalankan perintah `git remote -v`
-            result = subprocess.run(["git", "remote", "-v"], check=True, capture_output=True, text=True)
-            
-            # Tampilkan outputnya di Streamlit
-            st.write("Output of `git remote -v`:")
-            st.code(result.stdout)
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error: {e.stderr}")
-    
-    # Aplikasi Streamlit
-    st.title("Git Remote Viewer")
-    st.write("Klik tombol di bawah untuk melihat remote repository yang dikonfigurasi:")
-    if st.button("Lihat Remote Repository"):
-        display_git_remote()
 
     # ===========================================================
     # ================== HALAMAN UTAMA SUARA ====================
