@@ -1,10 +1,11 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForVision2Seq, AutoModelForSeq2SeqLM, AutoProcessor, AutoModelForCTC, VitsModel
+from transformers import pipeline, AutoProcessor, AutoModelForCTC, VitsModel
 import sqlite3
 import librosa
 import pandas as pd
 import torch
 import soundfile as sf
+from PIL import Image
 import io
 import re
 
@@ -20,25 +21,19 @@ HUGGINGFACE_TOKEN = "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"
 @st.cache_resource
 def load_model(language_option):
     if language_option == "Latin_to_Aksara":
-        tokenizer_PLTA = AutoTokenizer.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
-        model_PLTA = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
-        return tokenizer_PLTA, model_PLTA
+        pipe = pipeline("text2text-generation", model="ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
+        return pipe
     else:
-        tokenizer_PATL = AutoTokenizer.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
-        model_PATL = AutoModelForSeq2SeqLM.from_pretrained("ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
-        return tokenizer_PATL, model_PATL
+        pipe = pipeline("text2text-generation", model="ElStrom/Aksara_to_Latin", token=HUGGINGFACE_TOKEN)
+        return pipe
 
 # Fungsi untuk melakukan prediksi
-def predict(input_text, tokenizer, model):
+def predict(input_text, pipe):
     try:
-        inputs = tokenizer(input_text, return_tensors="pt")
-        outputs = model.generate(**inputs, max_length=400, do_sample=True, top_k=30, top_p=0.95)
-        translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        translated_text = pipe(input_text, max_length=400, do_sample=True, top_k=30, top_p=0.95)[0]['generated_text']
         return translated_text
     finally:
-        # Bersihkan cache setelah penggunaan model dan tokenizer
-        del tokenizer
-        del model
+        # Bersihkan cache setelah penggunaan pipeline
         torch.cuda.empty_cache()
 
 # Fungsi untuk menghubungkan ke database SQLite
@@ -57,20 +52,6 @@ def validate_password(password):
             re.search(r'\d', password) or re.search(r'\W', password)):
         return True
     return False
-
-def git_commit(file_path):
-    try:
-        today = datetime.today().strftime('%Y-%m-%d')
-        commit_message = today
-        result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
-        st.write(result_add.stdout)
-        result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
-        st.write(result_commit.stdout)
-        result_push = subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
-        st.write(result_push.stdout)
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error during git operation: {e.stderr}")
-        st.error(f"Error during git operation: {e.stderr}")
 
 # Fungsi utama Streamlit
 def main():
@@ -150,9 +131,6 @@ def main():
                 conn.commit()
                 conn.close()
                 st.success("Pendaftaran berhasil")
-                
-                # Commit to GitHub
-                git_commit("users.db")
 
                 st.session_state.page = "Login"
                 st.rerun()
@@ -205,8 +183,8 @@ def main():
                     input_text = " " + input_text
 
                 with st.spinner("Memproses..."):
-                    tokenizer, model = load_model(language_option)
-                    translated_text = predict(input_text, tokenizer, model)
+                    pipe = load_model(language_option)
+                    translated_text = predict(input_text, pipe)
                     st.text_area("Output", translated_text, height=200, key="translation_output_text")
 
                     # Simpan ke database
@@ -217,9 +195,6 @@ def main():
                             (input_text, translated_text, language_option, user_id))
                     conn.commit()
                     conn.close()
-                    
-                    # Commit to GitHub
-                    git_commit("translations.db")
             else:
                 st.warning("Mohon masukkan teks untuk diterjemahkan")
 
@@ -235,18 +210,16 @@ def main():
     if 'processing' not in st.session_state:
         st.session_state.processing = False
 
-    # Fungsi untuk memuat model dan tokenizer dengan caching
+    # Fungsi untuk memuat pipeline dengan caching
     @st.cache_resource
-    def load_stt_model():
-        processor_stt = AutoProcessor.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-        model_stt = AutoModelForCTC.from_pretrained("ElStrom/STT", token=HUGGINGFACE_TOKEN)
-        return processor_stt, model_stt
+    def load_stt_pipeline():
+        pipe_stt = pipeline("automatic-speech-recognition", model="ElStrom/STT", token=HUGGINGFACE_TOKEN)
+        return pipe_stt
 
     @st.cache_resource
-    def load_tts_model():
-        tokenizer_tts = AutoTokenizer.from_pretrained("facebook/mms-tts-sun", token=HUGGINGFACE_TOKEN)
-        model_tts = VitsModel.from_pretrained("facebook/mms-tts-sun", token=HUGGINGFACE_TOKEN)
-        return tokenizer_tts, model_tts
+    def load_tts_pipeline():
+        pipe_tts = pipeline("text-to-speech", model="facebook/mms-tts-sun", token=HUGGINGFACE_TOKEN)
+        return pipe_tts
 
     # Konten halaman utama
     if st.session_state.page == "Suara" and st.session_state.nav == "Suara":
@@ -294,22 +267,18 @@ def main():
                     # Pemrosesan Speech-to-Text
                     if submit_button:
                         st.session_state.processing = True  # Set processing state to True
-                        processor_stt, model_stt = load_stt_model()
+                        pipe_stt = load_stt_pipeline()
 
                         try:
-                            inputs = processor_stt(audio_data_16k, sampling_rate=16000, return_tensors="pt", padding=True)
+                            inputs = pipe_stt.feature_extractor(audio_data_16k, sampling_rate=16000, return_tensors="pt")
                             with st.spinner("Memproses..."):
-                                logits = model_stt(**inputs).logits
-                                predicted_ids = torch.argmax(logits, dim=-1)
-                                transcription = processor_stt.batch_decode(predicted_ids)
-                                output_latin = transcription[0]
+                                transcription = pipe_stt(audio_data_16k)['text']
+                                output_latin = transcription
 
                                 st.session_state.latin = output_latin
 
-                                tokenizer_PLTA, model_PLTA = load_model("Latin_to_Aksara")
-                                inputs_terjemahan = tokenizer_PLTA(output_latin, return_tensors="pt", padding=True)
-                                outputs_terjemahan = model_PLTA.generate(**inputs_terjemahan, max_new_tokens=50)
-                                output_aksara = tokenizer_PLTA.batch_decode(outputs_terjemahan, skip_special_tokens=True)[0]
+                                pipe = load_model("Latin_to_Aksara")
+                                output_aksara = predict(output_latin, pipe)
 
                                 st.session_state.aksara = output_aksara
 
@@ -320,18 +289,11 @@ def main():
                                         (user_id, output_latin, output_aksara, "Speech To Text"))
                                 conn.commit()
                                 conn.close()
-
-                                # Commit to GitHub
-                                git_commit("audio.db")
                         finally:
-                            del processor_stt
-                            del model_stt
-                            torch.cuda.empty_cache()
-
-                        st.session_state.processing = False  # Set processing state to False
-                        
-                        # Bersihkan cache Streamlit setelah pemrosesan selesai
-                        st.cache_data.clear()
+                            st.session_state.processing = False  # Set processing state to False
+                            
+                            # Bersihkan cache Streamlit setelah pemrosesan selesai
+                            st.cache_data.clear()
 
             col1, col2 = st.columns(2)
             with col1:
@@ -359,39 +321,43 @@ def main():
 
             if submit_button_tts and teks_input:
                 st.session_state.processing = True  # Set processing state to True
-                tokenizer_tts, model_tts = load_tts_model()
+                pipe_tts = load_tts_pipeline()
 
                 try:
-                    inputs = tokenizer_tts(teks_input, return_tensors="pt")
+                    with st.spinner("Memproses..."):
+                        audio_output = pipe_tts(teks_input)
 
-                    with torch.no_grad():
-                        output_waveform = model_tts(**inputs).waveform
-                        output_waveform_np = output_waveform.numpy()
+                        # Ekstraksi array audio dan sampling rate
+                        audio_array = audio_output["audio"]
+                        sampling_rate = audio_output["sampling_rate"]
 
-                    st.audio(output_waveform_np, format="audio/wav", sample_rate=16000)
+                        # Pastikan array audio dalam bentuk yang benar
+                        if len(audio_array.shape) > 1:
+                            audio_array = audio_array.flatten()
+
+                        # Tulis array audio ke buffer byte
+                        audio_buffer = io.BytesIO()
+                        sf.write(audio_buffer, audio_array, sampling_rate, format="wav")
+                        audio_buffer.seek(0)  # Kembalikan posisi buffer ke awal
+
+                        # Putar audio di Streamlit
+                        st.audio(audio_buffer, format="audio/wav")
+
                 finally:
-                    del tokenizer_tts
-                    del model_tts
-                    torch.cuda.empty_cache()
+                    st.session_state.teks_input = teks_input
 
-                # Perbarui text area dengan teks input setelah pemrosesan
-                st.session_state.teks_input = teks_input
+                    conn = create_connection('audio.db')
+                    c = conn.cursor()
+                    user_id = st.session_state.user_id
+                    c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
+                            (user_id, teks_input, "-", "Text To Speech"))
+                    conn.commit()
+                    conn.close()
 
-                conn = create_connection('audio.db')
-                c = conn.cursor()
-                user_id = st.session_state.user_id
-                c.execute("INSERT INTO audio (user_id, latin, aksara, mode_option) VALUES (?, ?, ?, ?)",
-                        (user_id, teks_input, "-", "Text To Speech"))
-                conn.commit()
-                conn.close()
+                    st.session_state.processing = False  # Set processing state to False
 
-                # Commit to GitHub
-                git_commit("audio.db")
-                
-                st.session_state.processing = False  # Set processing state to False
-
-                # Bersihkan cache Streamlit setelah pemrosesan selesai
-                st.cache_data.clear()
+                    # Bersihkan cache Streamlit setelah pemrosesan selesai
+                    st.cache_data.clear()
 
     # ===========================================================
     # ================= HALAMAN UTAMA GAMBAR ====================
@@ -466,9 +432,6 @@ def main():
                         (user_id, generated_text, translated_text))
                 conn.commit()
                 conn.close()
-
-                # Commit to GitHub
-                git_commit("image.db")
             finally:
                 del processor_gambar
                 del model_gambar
