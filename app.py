@@ -179,6 +179,10 @@ def main():
         if st.button("Submit", on_click=handle_submit_button) or st.session_state.submit_penerjemah:
             st.session_state.submit_penerjemah = False
             if input_text:
+                # Add whitespace in front of the input text if language_option is "Aksara_to_Latin"
+                if language_option == "Aksara_to_Latin":
+                    input_text = " " + input_text
+
                 with st.spinner("Memproses..."):
                     tokenizer, model = load_model(language_option)
                     translated_text = predict(input_text, tokenizer, model)
