@@ -15,7 +15,7 @@ import logging
 from datetime import datetime
 
 # Token API Hugging Face
-HUGGINGFACE_TOKEN = "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"
+ = "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"
 
 # Fungsi untuk memuat model berdasarkan pilihan bahasa
 @st.cache_resource
@@ -197,7 +197,7 @@ def main():
         # Use a pipeline as a high-level helper
         from transformers import pipeline
         
-        pipe = pipeline("text2text-generation", model="ElStrom/Latin_to_Aksara")
+        pipe = pipeline("text2text-generation", model="ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
 
         if st.button("Submit", on_click=handle_submit_button) or st.session_state.submit_penerjemah:
             st.session_state.submit_penerjemah = False
