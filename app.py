@@ -59,14 +59,8 @@ def validate_password(password):
         return True
     return False
 
-def create_netrc():
-    with open(os.path.expanduser("~/.netrc"), "w") as netrc:
-        netrc.write(f"machine github.com\nlogin elstrom\npassword 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\n")
-
 def git_commit(file_path):
     try:
-        create_netrc()  # Membuat file .netrc untuk autentikasi
-
         # Inisialisasi repository Git
         subprocess.run(["git", "init"], check=True)
         
@@ -88,12 +82,12 @@ def git_commit(file_path):
         subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
 
         # Menggunakan token akses pribadi untuk push
-        result_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
-        
+        token = "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"
+        repo_url = f"https://danram162@gmail.com:{token}@github.com/elstrom/SundaGenius.git"
+        result_push = subprocess.run(["git", "push", repo_url, "main"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
         st.write("Pushed to GitHub successfully")
     except subprocess.CalledProcessError as e:
-        st.write("Command output:", e.output)
         logging.error(f"Error during git operation: {e.stderr}")
         st.error(f"Error during git operation: {e.stderr}")
 
