@@ -16,6 +16,11 @@ from datetime import datetime
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
 
+git init
+git remote add origin https://github.com/elstrom/SundaGenius
+git config user.name "elstrom"
+git config user.email "danram162@gmail.com"
+
 # Fungsi untuk memuat model berdasarkan pilihan bahasa
 @st.cache_resource
 def load_model(language_option):
