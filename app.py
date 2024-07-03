@@ -68,10 +68,6 @@ def git_commit(file_path):
         subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
-        # Menggunakan Personal Access Token
-        repo_url = f"https://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@github.com/elstrom/SundaGenius.git"
-        subprocess.run(["git", "remote", "set-url", "origin", repo_url], check=True)
-        
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
         result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
