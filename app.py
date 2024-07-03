@@ -65,15 +65,15 @@ def git_commit(file_path):
         subprocess.run(["git", "init"], check=True)
         
         # Konfigurasi detail pengguna
-        subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
+        subprocess.run(["git", "config", "user.name", "elstrom"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
         # Menambahkan remote origin jika belum ada
         result_remote = subprocess.run(["git", "remote"], capture_output=True, text=True)
         if "origin" not in result_remote.stdout:
-            subprocess.run(["git", "remote", "add", "origin", "github.com/elstrom/SundaGenius"], check=True)
+            subprocess.run(["git", "remote", "add", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
         else:
-            subprocess.run(["git", "remote", "set-url", "origin", "github.com/elstrom/SundaGenius"], check=True)
+            subprocess.run(["git", "remote", "set-url", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
         
         # Menambahkan file, commit, dan push perubahan
         today = datetime.today().strftime('%Y-%m-%d')
@@ -84,7 +84,9 @@ def git_commit(file_path):
         st.write(result_commit.stdout)
 
         # Menggunakan token akses pribadi untuk push
-        result_push = subprocess.run(["git", "push", "main"], check=True, capture_output=True, text=True)
+        token = "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"
+        repo_url = f"https://github.com/elstrom/SundaGenius"
+        result_push = subprocess.run(["git", "push", repo_url, "main"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
         st.write("Pushed to GitHub successfully")
     except subprocess.CalledProcessError as e:
