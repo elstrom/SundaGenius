@@ -69,7 +69,7 @@ def git_commit(file_path):
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
         # Menggunakan Personal Access Token
-        token = "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"
+        token = "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"
         repo_url = f"https://{token}@github.com/elstrom/SundaGenius.git"
         subprocess.run(["git", "remote", "set-url", "origin", repo_url], check=True)
         
