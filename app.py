@@ -173,8 +173,8 @@ def main():
                 time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
 
     def monitor_ram_usage():
-    mem = psutil.virtual_memory()
-    return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
+        mem = psutil.virtual_memory()
+        return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
 
     st.sidebar.write("Penggunaan RAM saat ini:")
     st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
