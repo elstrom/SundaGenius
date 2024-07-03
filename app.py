@@ -69,7 +69,7 @@ def git_commit(file_path):
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
         # Add remote repository
-        subprocess.run(["git", "remote", "add", "origin", "https://github.com/elstrom/SundaGenius.git"], check=True)
+        subprocess.run(["git", "remote", "add", "original", "https://github.com/elstrom/SundaGenius.git"], check=True)
         
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
