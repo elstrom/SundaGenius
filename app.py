@@ -74,7 +74,7 @@ def git_commit(file_path):
         result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
         st.write(result_add.stdout)
         
-        result_commit = subprocess.run(["git", "commit", "-m", commit_message"], check=True, capture_output=True, text=True)
+        result_commit = subprocess.run(["git", "commit", "-m", "commit_message"], check=True, capture_output=True, text=True)
         st.write(result_commit.stdout)
         
         result_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
