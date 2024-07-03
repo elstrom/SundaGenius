@@ -1,6 +1,8 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
+import subprocess
+from datetime import datetime
 
 def create_connection(db_file):
     conn = sqlite3.connect(db_file)
@@ -11,6 +13,17 @@ def validate_phone(phone):
 
 def validate_password(password):
     return len(password) >= 8 and any(char.isupper() for char in password) and any(char.isdigit() or not char.isalnum() for char in password)
+
+# Fungsi untuk melakukan commit ke GitHub
+def git_commit(file_path):
+    try:
+        today = datetime.today().strftime('%Y-%m-%d')
+        commit_message = today
+        subprocess.run(["git", "add", file_path], check=True)
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        subprocess.run(["git", "push"], check=True)
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error during git operation: {e}")
 
 def main():
     st.title("Profil Pengguna")
@@ -43,11 +56,7 @@ def main():
         username = st.text_input("Username", df['username'][0], disabled=True, key="profile_username")
         email = st.text_input("Email", df['email'][0], disabled=True, key="profile_email")
         phone = st.text_input("Nomor Telepon", df['phone'][0], disabled=True, key="profile_phone")
-        password_hidden = st.checkbox("Tampilkan Password", key="profile_password_checkbox", disabled=True)
-        if password_hidden:
-            password = st.text_input("Password", df['password'][0], disabled=True, key="profile_password")
-        else:
-            password = st.text_input("Password", "******", type="password", disabled=True, key="profile_password_hidden")
+        password = st.text_input("Password", df['password'][0], type="password", disabled=True, key="profile_password")
 
         if st.button("Edit Profil"):
             st.session_state.edit_mode = True
@@ -56,11 +65,7 @@ def main():
             username = st.text_input("Username", df['username'][0], key="edit_profile_username")
             email = st.text_input("Email", df['email'][0], key="edit_profile_email")
             phone = st.text_input("Nomor Telepon", df['phone'][0], key="edit_profile_phone")
-            password_hidden = st.checkbox("Tampilkan Password", key="edit_profile_password_checkbox")
-            if password_hidden:
-                password = st.text_input("Password", df['password'][0], key="edit_profile_password")
-            else:
-                password = st.text_input("Password", "******", type="password", key="edit_profile_password_hidden")
+            password = st.text_input("Password", df['password'][0], type="password", key="edit_profile_password")
             
             if st.button("Konfirmasi"):
                 if not validate_phone(phone):
@@ -72,8 +77,14 @@ def main():
                     c.execute("UPDATE users SET username = ?, email = ?, phone = ?, password = ? WHERE id = ?",
                               (username, email, phone, password, user_id))
                     conn.commit()
+                    conn.close()
+
+                    # Commit to GitHub
+                    git_commit("users.db")
+
                     st.success("Perubahan disimpan")
                     st.session_state.edit_mode = False
+                    st.rerun()
 
         if st.button("Keluar"):
             st.session_state.user_id = None
