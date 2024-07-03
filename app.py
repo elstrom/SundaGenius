@@ -75,20 +75,17 @@ def git_commit(file_path):
         else:
             subprocess.run(["git", "remote", "set-url", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
         
-        # Menambahkan file, commit, dan push perubahan
+        # Menambahkan file dan commit perubahan
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
-        result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
-        st.write(result_add.stdout)
-        result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
-        st.write(result_commit.stdout)
+        subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
+        subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
 
         # Menggunakan token akses pribadi untuk push
         token = "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"
-        repo_url = f"https://{token}@github.com/elstrom/SundaGenius.git"
+        repo_url = f"https://{token}:x-oauth-basic@github.com/elstrom/SundaGenius.git"
         result_push = subprocess.run(["git", "push", repo_url, "main"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
-        st.write(result_push.stderr)
         st.write("Pushed to GitHub successfully")
     except subprocess.CalledProcessError as e:
         logging.error(f"Error during git operation: {e.stderr}")
