@@ -71,9 +71,9 @@ def git_commit(file_path):
         # Menambahkan remote origin jika belum ada
         result_remote = subprocess.run(["git", "remote"], capture_output=True, text=True)
         if "origin" not in result_remote.stdout:
-            subprocess.run(["git", "remote", "add", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
+            subprocess.run(["git", "remote", "add", "origin", "github.com/elstrom/SundaGenius"], check=True)
         else:
-            subprocess.run(["git", "remote", "set-url", "origin", "https://elstrom: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@github.com/elstrom/SundaGenius"], check=True)
+            subprocess.run(["git", "remote", "set-url", "origin", "github.com/elstrom/SundaGenius"], check=True)
         
         # Menambahkan file, commit, dan push perubahan
         today = datetime.today().strftime('%Y-%m-%d')
