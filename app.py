@@ -66,6 +66,8 @@ def git_commit(file_path):
         result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
         result_commit = subprocess.run(["git", "commit", "-m", "commit_message"], check=True, capture_output=True, text=True)        
         result_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"")
         
 # Fungsi utama Streamlit
 def main():
