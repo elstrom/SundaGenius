@@ -13,6 +13,7 @@ import numpy as np
 import subprocess
 import logging
 from datetime import datetime
+import psutil
 
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
@@ -170,6 +171,13 @@ def main():
             for _ in range(20):
                 st.cache_resource.clear()
                 time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
+
+    def monitor_ram_usage():
+    mem = psutil.virtual_memory()
+    return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
+
+    st.sidebar.write("Penggunaan RAM saat ini:")
+    st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
     
     if st.sidebar.button("📚 Penerjemah"):
         clear_cache_with_loading()
