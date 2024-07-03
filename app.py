@@ -61,27 +61,11 @@ def validate_password(password):
 
 def git_commit(file_path):
     try:
-        # Inisialisasi repository Git jika belum diinisialisasi
-        subprocess.run(["git", "init"], check=True)
-        
-        # Memeriksa repository remote yang terhubung
-        result_remote = subprocess.run(["git", "remote", "-v"], check=True, capture_output=True, text=True)
-        st.write(result_remote.stdout)
-        
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
-        
         result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
-        st.write(result_add.stdout)
-        
-        result_commit = subprocess.run(["git", "commit", "-m", "commit_message"], check=True, capture_output=True, text=True)
-        st.write(result_commit.stdout)
-        
+        result_commit = subprocess.run(["git", "commit", "-m", "commit_message"], check=True, capture_output=True, text=True)        
         result_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
-        st.write(result_push.stdout)
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error during git operation: {e.stderr}")
-        st.error(f"Error during git operation: {e.stderr}")
         
 # Fungsi utama Streamlit
 def main():
