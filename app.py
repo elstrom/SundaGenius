@@ -64,10 +64,6 @@ def git_commit(file_path):
         # Inisialisasi repository Git jika belum diinisialisasi
         subprocess.run(["git", "init"], check=True)
         
-        # Konfigurasi detail pengguna
-        subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
-        subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
-        
         # Set remote repository URL
         remote_url = "git@github.com:elstrom/sundagenius.git"
         subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
