@@ -59,6 +59,30 @@ def validate_password(password):
         return True
     return False
 
+def git_commit(file_path):
+    try:
+        # Inisialisasi repository Git
+        subprocess.run(["git", "init"], check=True)
+        
+        # Konfigurasi detail pengguna
+        subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
+        subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
+        
+        # Menggunakan Personal Access Token
+        repo_url = f"https://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@github.com/elstrom/SundaGenius.git"
+        subprocess.run(["git", "remote", "set-url", "origin", repo_url], check=True)
+        
+        today = datetime.today().strftime('%Y-%m-%d')
+        commit_message = today
+        result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
+        st.write(result_add.stdout)
+        result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
+        st.write(result_commit.stdout)
+        result_push = subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+        st.write(result_push.stdout)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error during git operation: {e.stderr}")
+        st.error(f"Error during git operation: {e.stderr}")
 
 # Fungsi utama Streamlit
 def main():
