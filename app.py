@@ -9,6 +9,8 @@ import io
 import re
 
 import numpy as np
+import subprocess
+from datetime import datetime
 
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
@@ -54,6 +56,17 @@ def validate_password(password):
             re.search(r'\d', password) or re.search(r'\W', password)):
         return True
     return False
+
+# Fungsi untuk melakukan commit ke GitHub
+def git_commit(file_path):
+    try:
+        today = datetime.today().strftime('%Y-%m-%d')
+        commit_message = today
+        subprocess.run(["git", "add", file_path], check=True)
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        subprocess.run(["git", "push"], check=True)
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error during git operation: {e}")
 
 # Fungsi utama Streamlit
 def main():
@@ -133,6 +146,10 @@ def main():
                 conn.commit()
                 conn.close()
                 st.success("Pendaftaran berhasil")
+                
+                # Commit to GitHub
+                git_commit("users.db")
+
                 st.session_state.page = "Login"
                 st.rerun()
         if st.button("Kembali"):
@@ -196,6 +213,9 @@ def main():
                             (input_text, translated_text, language_option, user_id))
                     conn.commit()
                     conn.close()
+                    
+                    # Commit to GitHub
+                    git_commit("translations.db")
             else:
                 st.warning("Mohon masukkan teks untuk diterjemahkan")
 
@@ -296,6 +316,9 @@ def main():
                                         (user_id, output_latin, output_aksara, "Speech To Text"))
                                 conn.commit()
                                 conn.close()
+
+                                # Commit to GitHub
+                                git_commit("audio.db")
                         finally:
                             del processor_stt
                             del model_stt
@@ -357,6 +380,9 @@ def main():
                         (user_id, teks_input, "-", "Text To Speech"))
                 conn.commit()
                 conn.close()
+
+                # Commit to GitHub
+                git_commit("audio.db")
                 
                 st.session_state.processing = False  # Set processing state to False
 
@@ -436,6 +462,9 @@ def main():
                         (user_id, generated_text, translated_text))
                 conn.commit()
                 conn.close()
+
+                # Commit to GitHub
+                git_commit("image.db")
             finally:
                 del processor_gambar
                 del model_gambar
