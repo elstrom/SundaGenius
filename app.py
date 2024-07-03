@@ -169,7 +169,7 @@ def main():
         with st.spinner("Membersihkan cache..."):
             for _ in range(50):
                 st.cache_resource.clear()
-                time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
+                time.sleep(1)  # Menambahkan jeda 5 detik pada setiap iterasi
     
     if st.sidebar.button("📚 Penerjemah"):
         clear_cache_with_loading()
