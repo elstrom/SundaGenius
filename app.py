@@ -83,11 +83,13 @@ def git_commit(file_path):
 
         # Menggunakan token akses pribadi untuk push
         token = "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"
-        repo_url = f"https://elstrom:{token}@github.com/elstrom/SundaGenius.git"
+        repo_url = f"https://{token}@github.com/elstrom/SundaGenius.git"
         result_push = subprocess.run(["git", "push", repo_url, "main"], check=True, capture_output=True, text=True)
+        
         st.write(result_push.stdout)
         st.write("Pushed to GitHub successfully")
     except subprocess.CalledProcessError as e:
+        st.write("Command output:", e.output)
         logging.error(f"Error during git operation: {e.stderr}")
         st.error(f"Error during git operation: {e.stderr}")
 
