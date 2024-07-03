@@ -63,7 +63,6 @@ def git_commit(file_path):
     try:
         
         subprocess.run(["git", "init"], check=True)
-        subprocess.run(["git", "remote", "add", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
         subprocess.run(["git", "config", "user.name", "elstrom"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
 
