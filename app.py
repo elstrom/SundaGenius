@@ -66,6 +66,7 @@ def git_commit(file_path):
         
         # Konfigurasi detail pengguna
         subprocess.run(["git", "config", "user.name", "elstrom"], check=True)
+        subprocess.run(["git", "config", "user.password ", "Ramdan77"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
         # Menambahkan remote origin jika belum ada
