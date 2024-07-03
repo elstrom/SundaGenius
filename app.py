@@ -16,11 +16,6 @@ from datetime import datetime
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
 
-git init
-git remote add origin https://github.com/elstrom/SundaGenius
-git config user.name "elstrom"
-git config user.email "danram162@gmail.com"
-
 # Fungsi untuk memuat model berdasarkan pilihan bahasa
 @st.cache_resource
 def load_model(language_option):
@@ -63,8 +58,15 @@ def validate_password(password):
         return True
     return False
 
+
 def git_commit(file_path):
     try:
+        
+        subprocess.run(["git", "init"], check=True)
+        subprocess.run(["git", "remote", "add", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
+        subprocess.run(["git", "config", "user.name", "elstrom"], check=True)
+        subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
+
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
         result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
