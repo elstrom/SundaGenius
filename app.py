@@ -84,7 +84,7 @@ def git_commit(file_path):
         st.write(result_commit.stdout)
 
         # Menggunakan token akses pribadi untuk push
-        token = "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"
+        token = "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"
         repo_url = f"https://{token}@github.com/elstrom/SundaGenius.git"
         result_push = subprocess.run(["git", "push", repo_url, "main"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
