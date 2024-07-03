@@ -167,25 +167,25 @@ def main():
     
     def clear_cache_with_loading():
         with st.spinner("Membersihkan cache..."):
-            for _ in range(10):
+            for _ in range(20):
                 st.cache_resource.clear()
-                time.sleep(1)  # Menambahkan jeda 5 detik pada setiap iterasi
+                time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
     
     if st.sidebar.button("📚 Penerjemah"):
         clear_cache_with_loading()
         st.session_state.page = "Penerjemah"
         st.session_state.nav = "Penerjemah"
-        st.experimental_rerun()
+        st.rerun()
     if st.sidebar.button("🎙️ Suara"):
         clear_cache_with_loading()
         st.session_state.page = "Suara"
         st.session_state.nav = "Suara"
-        st.experimental_rerun()
+        st.rerun()
     if st.sidebar.button("📸 Gambar"):
         clear_cache_with_loading()
         st.session_state.page = "Gambar"
         st.session_state.nav = "Gambar"
-        st.experimental_rerun()
+        st.rerun()
 
     # ===========================================================
     # =============== HALAMAN UTAMA TERJEMAH ====================
