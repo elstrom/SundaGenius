@@ -1,15 +1,9 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForVision2Seq, AutoModelForSeq2SeqLM, AutoProcessor, AutoModelForCTC, VitsModel
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import sqlite3
-import librosa
 import pandas as pd
 import torch
-import soundfile as sf
-import io
 import re
-import os
-
-import numpy as np
 import subprocess
 import logging
 from datetime import datetime
@@ -115,7 +109,7 @@ def main():
                 st.session_state.username = df['username'][0]
                 st.success("Login berhasil")
                 st.session_state.page = "Penerjemah"
-                st.session_state.nav == "Penerjemah"
+                st.session_state.nav = "Penerjemah"
                 st.session_state.enter_pressed = False
                 st.rerun()
             else:
@@ -167,18 +161,27 @@ def main():
     
     # Sidebar menu
     st.sidebar.title("Menu")
+
+    def clear_cache_with_loading():
+        with st.spinner("Membersihkan cache..."):
+            for _ in range(30):
+                st.cache_resource.clear()
+    
     if st.sidebar.button("📚 Penerjemah"):
+        clear_cache_with_loading()
         st.session_state.page = "Penerjemah"
         st.session_state.nav = "Penerjemah"
-        st.cache_resource.clear()
+        st.rerun()
     if st.sidebar.button("🎙️ Suara"):
+        clear_cache_with_loading()
         st.session_state.page = "Suara"
         st.session_state.nav = "Suara"
-        st.cache_resource.clear()
+        st.rerun()
     if st.sidebar.button("📸 Gambar"):
+        clear_cache_with_loading()
         st.session_state.page = "Gambar"
         st.session_state.nav = "Gambar"
-        st.cache_resource.clear()
+        st.rerun()
 
     # ===========================================================
     # =============== HALAMAN UTAMA TERJEMAH ====================
