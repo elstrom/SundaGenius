@@ -81,12 +81,11 @@ def git_commit(file_path):
         subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
         subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
 
-        # Menggunakan token akses pribadi untuk push
-        token = "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"
-        repo_url = f"https://{token}@github.com/elstrom/SundaGenius.git"
-        result_push = subprocess.run(["git", "push", repo_url, "main"], check=True, capture_output=True, text=True)
+        # Menggunakan GitHub CLI untuk push
+        subprocess.run(["gh", "repo", "set-default", "elstrom/SundaGenius"], check=True)
+        subprocess.run(["gh", "repo", "clone", "elstrom/SundaGenius"], check=True)
+        subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
         
-        st.write(result_push.stdout)
         st.write("Pushed to GitHub successfully")
     except subprocess.CalledProcessError as e:
         st.write("Command output:", e.output)
