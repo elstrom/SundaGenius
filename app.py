@@ -194,11 +194,6 @@ def main():
         language_option = st.selectbox("Pilih bahasa", ["Latin_to_Aksara", "Aksara_to_Latin"])
         input_text = st.text_area("Input teks", key="translation_input_text")
 
-        # Use a pipeline as a high-level helper
-        from transformers import pipeline
-        
-        pipe = pipeline("text2text-generation", model="ElStrom/Latin_to_Aksara", token=HUGGINGFACE_TOKEN)
-
         if st.button("Submit", on_click=handle_submit_button) or st.session_state.submit_penerjemah:
             st.session_state.submit_penerjemah = False
             if input_text:
@@ -207,10 +202,9 @@ def main():
                     input_text = " " + input_text
 
                 with st.spinner("Memproses..."):
-                    pipe(input_text)
                     tokenizer, model = load_model(language_option)
                     translated_text = predict(input_text, tokenizer, model)
-                    st.text_area("Output", pipe(input_text), height=200, key="translation_output_text")
+                    st.text_area("Output", translated_text, height=200, key="translation_output_text")
 
                     # Simpan ke database
                     conn = create_connection('translations.db')
