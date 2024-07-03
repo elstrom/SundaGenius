@@ -167,7 +167,7 @@ def main():
     
     def clear_cache_with_loading():
         with st.spinner("Membersihkan cache..."):
-            for _ in range(50):
+            for _ in range(10):
                 st.cache_resource.clear()
                 time.sleep(1)  # Menambahkan jeda 5 detik pada setiap iterasi
     
