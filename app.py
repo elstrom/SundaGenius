@@ -16,6 +16,12 @@ from datetime import datetime
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
 
+import os
+
+# Set git configuration for user email and user name
+os.system('git config --global user.email "danram162@gmail.com"')
+os.system('git config --global user.name "elstrom"')
+
 # Fungsi untuk memuat model berdasarkan pilihan bahasa
 @st.cache_resource
 def load_model(language_option):
@@ -62,11 +68,11 @@ def git_commit(file_path):
     try:
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
-        result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
+        result_add = os.system(["git", "add", file_path], check=True, capture_output=True, text=True)
         st.write(result_add.stdout)
-        result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
+        result_commit = os.system(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
         st.write(result_commit.stdout)
-        result_push = subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+        result_push = os.system(["git", "push"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
     except subprocess.CalledProcessError as e:
         logging.error(f"Error during git operation: {e.stderr}")
