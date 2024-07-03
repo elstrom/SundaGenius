@@ -67,7 +67,7 @@ def git_commit(file_path):
         # Konfigurasi detail pengguna
         subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
-        subprocess.run(["git", "remote", "set-url", "origin", "https://ramdan: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@github.com/elstrom/SundaGenius.git"], check=True)
+        subprocess.run(["git", "remote", "set-url", "origin", "https://ramdan:Ramdan77@github.com/elstrom/SundaGenius.git"], check=True)
         
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
