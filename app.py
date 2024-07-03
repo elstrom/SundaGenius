@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline, AutoProcessor, AutoModelForCTC, VitsModel
+from transformers import pipeline, AutoProcessor, AutoModelForCTC, VitsModel, AutoModelForVision2Seq
 import sqlite3
 import librosa
 import pandas as pd
