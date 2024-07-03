@@ -75,7 +75,7 @@ def git_commit(file_path):
         st.write(result_add.stdout)
         result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
         st.write(result_commit.stdout)
-        result_push = subprocess.run(["git", "push", "-u", "main"], check=True, capture_output=True, text=True)
+        result_push = subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
     except subprocess.CalledProcessError as e:
         logging.error(f"Error during git operation: {e.stderr}")
