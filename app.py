@@ -168,13 +168,14 @@ def main():
     
     def clear_cache_with_loading():
         with st.spinner("Membersihkan cache..."):
-            for _ in range(20):
+            for _ in range(10):
                 st.cache_resource.clear()
+                st.cache_data.clear()
                 time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
 
     def monitor_ram_usage():
         mem = psutil.virtual_memory()
-        return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
+        return mem.used  # Mengembalikan penggunaan RAM dalam MB
 
     st.sidebar.write("Penggunaan RAM saat ini:")
     st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
