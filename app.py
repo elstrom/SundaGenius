@@ -170,12 +170,15 @@ def main():
     if st.sidebar.button("📚 Penerjemah"):
         st.session_state.page = "Penerjemah"
         st.session_state.nav = "Penerjemah"
+        st.cache_resource.clear()
     if st.sidebar.button("🎙️ Suara"):
         st.session_state.page = "Suara"
         st.session_state.nav = "Suara"
+        st.cache_resource.clear()
     if st.sidebar.button("📸 Gambar"):
         st.session_state.page = "Gambar"
         st.session_state.nav = "Gambar"
+        st.cache_resource.clear()
 
     # ===========================================================
     # =============== HALAMAN UTAMA TERJEMAH ====================
