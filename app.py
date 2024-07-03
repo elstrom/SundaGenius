@@ -175,7 +175,7 @@ def main():
 
     def monitor_ram_usage():
         mem = psutil.virtual_memory()
-        return mem.used  # Mengembalikan penggunaan RAM dalam MB
+        return mem.used / (1024 ** 3)  # Mengembalikan penggunaan RAM dalam MB
 
     st.sidebar.write("Penggunaan RAM saat ini:")
     st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
