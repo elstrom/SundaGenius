@@ -10,6 +10,7 @@ import re
 
 import numpy as np
 import subprocess
+import logging
 from datetime import datetime
 
 # Token API Hugging Face
@@ -57,16 +58,19 @@ def validate_password(password):
         return True
     return False
 
-# Fungsi untuk melakukan commit ke GitHub
 def git_commit(file_path):
     try:
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
-        subprocess.run(["git", "add", file_path], check=True)
-        subprocess.run(["git", "commit", "-m", commit_message], check=True)
-        subprocess.run(["git", "push"], check=True)
+        result_add = subprocess.run(["git", "add", file_path], check=True, capture_output=True, text=True)
+        st.write(result_add.stdout)
+        result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
+        st.write(result_commit.stdout)
+        result_push = subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+        st.write(result_push.stdout)
     except subprocess.CalledProcessError as e:
-        st.error(f"Error during git operation: {e}")
+        logging.error(f"Error during git operation: {e.stderr}")
+        st.error(f"Error during git operation: {e.stderr}")
 
 # Fungsi utama Streamlit
 def main():
