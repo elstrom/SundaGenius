@@ -61,15 +61,16 @@ def validate_password(password):
 
 def git_commit(file_path):
     try:
-        # Inisialisasi repository Git
+        # Inisialisasi repository Git jika belum diinisialisasi
         subprocess.run(["git", "init"], check=True)
         
         # Konfigurasi detail pengguna
         subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
-        # Add remote repository
-        subprocess.run(["git", "remote", "add", "original", "https://github.com/elstrom/SundaGenius.git"], check=True)
+        # Set remote repository URL
+        remote_url = "https://github.com/elstrom/SundaGenius.git"
+        subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
         
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
