@@ -63,11 +63,27 @@ def git_commit(file_path):
     try:
         # Initialize the Git repository
         subprocess.run(["git", "init"], check=True)
+
+        # Check if the remote 'origin' already exists
+        result_remote = subprocess.run(["git", "remote"], capture_output=True, text=True)
+        if "origin" not in result_remote.stdout:
+            subprocess.run(["git", "remote", "add", "origin", "https://github.com/elstrom/SundaGenius"], check=True)
         
         # Configure user details
         subprocess.run(["git", "config", "user.name", "elstrom"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
+        # Check the current branch name
+        result_branch = subprocess.run(["git", "branch", "-a"], capture_output=True, text=True)
+        if "main" in result_branch.stdout:
+            branch_name = "main"
+        elif "master" in result_branch.stdout:
+            branch_name = "master"
+        else:
+            # If neither branch exists, create a new main branch
+            subprocess.run(["git", "checkout", "-b", "main"], check=True)
+            branch_name = "main"
+
         # Commit and push changes
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
@@ -75,7 +91,7 @@ def git_commit(file_path):
         st.write(result_add.stdout)
         result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
         st.write(result_commit.stdout)
-        result_push = subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+        result_push = subprocess.run(["git", "push", "-u", "origin", branch_name], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
     except subprocess.CalledProcessError as e:
         logging.error(f"Error during git operation: {e.stderr}")
