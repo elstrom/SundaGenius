@@ -68,6 +68,10 @@ def git_commit(file_path):
         subprocess.run(["git", "config", "user.name", "ramdan"], check=True)
         subprocess.run(["git", "config", "user.email", "danram162@gmail.com"], check=True)
         
+        # Set remote repository URL
+        remote_url = "git@github.com:elstrom/sundagenius.git"
+        subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
+        
         today = datetime.today().strftime('%Y-%m-%d')
         commit_message = today
         
@@ -77,11 +81,12 @@ def git_commit(file_path):
         result_commit = subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True, text=True)
         st.write(result_commit.stdout)
         
-        result_push = subprocess.run(["git", "push", "https://github.com/elstrom/SundaGenius.git", "main"], check=True, capture_output=True, text=True)
+        result_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
         st.write(result_push.stdout)
     except subprocess.CalledProcessError as e:
         logging.error(f"Error during git operation: {e.stderr}")
         st.error(f"Error during git operation: {e.stderr}")
+        
 # Fungsi utama Streamlit
 def main():
     st.set_page_config(page_title="Mesin Penerjemahan", layout="wide")
