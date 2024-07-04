@@ -175,12 +175,14 @@ def main():
 
     def monitor_ram_usage():
         mem = psutil.virtual_memory()
-        return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
-
+        return mem.used / (1024 ** 3)  # Mengembalikan penggunaan RAM dalam MB
+    
     def loop_ram():
-        st.sidebar.write("Penggunaan RAM saat ini:")
-        st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
-        time.sleep(3)
+        placeholder = st.sidebar.empty()
+        while True:
+            ram_usage = monitor_ram_usage()
+            placeholder.write(f"Penggunaan RAM saat ini: {ram_usage:.2f} MB")
+            time.sleep(3)
     
     if st.sidebar.button("📚 Penerjemah"):
         clear_cache_with_loading()
