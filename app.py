@@ -179,7 +179,7 @@ def main():
 
     def loop_ram():
         st.sidebar.write("Penggunaan RAM saat ini:")
-        st.sidebar.write(f"{monitor_ram_usage():.2f} MB"
+        st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
         time.sleep(3)
     
     if st.sidebar.button("📚 Penerjemah"):
