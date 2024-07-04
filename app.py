@@ -174,11 +174,17 @@ def main():
                 time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
 
     def monitor_ram_usage():
-        mem = psutil.virtual_memory()
-        return mem.used / (1024 ** 3)  # Mengembalikan penggunaan RAM dalam MB
+        placeholder = st.sidebar.empty()  # Membuat placeholder di sidebar
+        while True:
+            mem = psutil.virtual_memory()
+            ram_usage = mem.used / (1024 ** 3)  # Menghitung penggunaan RAM dalam MB
+            placeholder.write(f"Penggunaan RAM saat ini: {ram_usage:.2f} MB")
+            time.sleep(1)  # Update setiap 1 detik
 
-    st.sidebar.write("Penggunaan RAM saat ini:")
-    st.sidebar.write(f"{monitor_ram_usage():.2f} MB")
+    # Memulai monitoring RAM dalam thread terpisah
+    import threading
+    ram_thread = threading.Thread(target=monitor_ram_usage, daemon=True)
+    ram_thread.start()
     
     if st.sidebar.button("📚 Penerjemah"):
         clear_cache_with_loading()
