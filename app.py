@@ -175,7 +175,7 @@ def main():
 
     def monitor_ram_usage():
         mem = psutil.virtual_memory()
-        return mem.used / (1024 ** 3)  # Mengembalikan penggunaan RAM dalam MB
+        return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
     
     # Placeholder untuk penggunaan RAM
     ram_placeholder = st.sidebar.empty()
