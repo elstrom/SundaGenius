@@ -6,3 +6,4 @@ streamlit==1.36.0
 torch==2.2.1
 transformers==4.38.2
 numpy==1.26.4
+psutil

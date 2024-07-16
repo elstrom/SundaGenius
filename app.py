@@ -8,11 +8,12 @@ import soundfile as sf
 import io
 import re
 import os
-
+import time
 import numpy as np
 import subprocess
 import logging
 from datetime import datetime
+import psutil
 
 # Token API Hugging Face
 HUGGINGFACE_TOKEN = "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"
@@ -94,9 +95,6 @@ def main():
     def handle_submit_button():
         st.session_state.submit_penerjemah = True
 
-    st.write(f"Current page: {st.session_state.page}")
-    st.write(f"Current nav: {st.session_state.nav}")
-
     # ===========================================================
     # ========================= HALAMAN AWAL ====================
     # ===========================================================
@@ -165,21 +163,48 @@ def main():
             load_register_page()
         return
     
-    # Sidebar menu
-    st.sidebar.title("Menu")
+    def clear_cache_with_loading():
+        with st.spinner("Membersihkan cache..."):
+            for _ in range(10):
+                st.cache_resource.clear()
+                st.cache_data.clear()
+                time.sleep(5)  # Menambahkan jeda 5 detik pada setiap iterasi
+
+    def monitor_ram_usage():
+        mem = psutil.virtual_memory()
+        return mem.used / (1024 ** 2)  # Mengembalikan penggunaan RAM dalam MB
+    
+    # Placeholder untuk penggunaan RAM
+    ram_placeholder = st.sidebar.empty()
+    
+    # Tombol untuk memperbarui penggunaan RAM
+    if st.sidebar.button("Perbarui Penggunaan RAM"):
+        ram_usage = monitor_ram_usage()
+        ram_placeholder.write(f"Penggunaan RAM saat ini: {ram_usage:.2f} MB")
+    
     if st.sidebar.button("📚 Penerjemah"):
+        clear_cache_with_loading()
         st.session_state.page = "Penerjemah"
         st.session_state.nav = "Penerjemah"
+        st.rerun()
     if st.sidebar.button("🎙️ Suara"):
+        clear_cache_with_loading()
         st.session_state.page = "Suara"
         st.session_state.nav = "Suara"
+        st.rerun()
     if st.sidebar.button("📸 Gambar"):
+        clear_cache_with_loading()
         st.session_state.page = "Gambar"
         st.session_state.nav = "Gambar"
+        st.rerun()
 
     # ===========================================================
     # =============== HALAMAN UTAMA TERJEMAH ====================
     # ===========================================================
+
+    def clean_whitespace(text):
+        """Menghapus whitespace berlebih, hanya menyisakan satu spasi antar kata."""
+        return re.sub(r'\s+', ' ', text).strip()
 
     if st.session_state.page == "Penerjemah" and st.session_state.nav == "Penerjemah":
         col1, col2, col3 = st.columns([0.7, 0.2, 0.2])
@@ -197,13 +222,19 @@ def main():
         if st.button("Submit", on_click=handle_submit_button) or st.session_state.submit_penerjemah:
             st.session_state.submit_penerjemah = False
             if input_text:
-                # Add whitespace in front of the input text if language_option is "Aksara_to_Latin"
-                if language_option == "Aksara_to_Latin":
-                    input_text = " " + input_text
+                input_text = " " + input_text  # Tambahkan whitespace di depan
+                
+                if language_option == "Latin_to_Aksara":
+                    input_text = input_text.lower()  # Ubah menjadi huruf kecil
+                    input_text = ''.join(e for e in input_text if e.isalnum() or e.isspace())  # Hapus semua simbol
 
                 with st.spinner("Memproses..."):
                     tokenizer, model = load_model(language_option)
                     translated_text = predict(input_text, tokenizer, model)
+                    
+                    # Bersihkan whitespace berlebih dari output
+                    translated_text = clean_whitespace(translated_text)
+                    
                     st.text_area("Output", translated_text, height=200, key="translation_output_text")
 
                     # Simpan ke database

@@ -1,19 +1,13 @@
 [theme]
+base="light"
 primaryColor = "#4CAF50"
-backgroundColor = "#0E1117"
-secondaryBackgroundColor = "#262730"
-textColor = "#FAFAFA"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#aaaaaa"
+textColor = "#000000"
 font = "sans serif"
 
 [client]
 showSidebarNavigation = false
-
-[general]
-# The name displayed in the browser tab
-browserTitle = "SundaGenius"
-
-# Whether to display the "Made with Streamlit" watermark
-hideStreamlitMark = true
 
 [runner]
 # Install a watcher to automatically rerun script if the file changes

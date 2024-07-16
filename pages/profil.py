@@ -38,12 +38,10 @@ def main():
     try:
         user_id = int(user_id)
     except (ValueError, TypeError):
-        st.write("User ID tidak valid")
+        st.write("User ID tidak ditemukan harap melakukan login!")
         if st.button("🔑 :blue[Login]"):
             st.switch_page("app.py")
         return  # Keluar jika user_id tidak valid
-
-    st.write(f"Current page: {st.session_state.page}")
     if st.button("🔙 :violet[Kembali]"):
         st.switch_page("app.py")
     
@@ -89,7 +87,7 @@ def main():
         if st.button("Keluar"):
             st.session_state.user_id = None
             st.session_state.page = "Login"
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.write("Pengguna tidak ditemukan.")
 
